@@ -48,7 +48,7 @@ void pluginmanager::parsefile(std::string filepath)
 			path = std::get<0>(tempret);
 			if (path=="")
 			{
-				path=name+_filesysdelimiter+name;
+				path=(std::string)"plugins"+_filesysdelimiter+name+_filesysdelimiter+name;
 			}
 		}else if(foundline==1 && line.find("args=")!=std::string::npos)
 		{
