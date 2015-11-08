@@ -16,15 +16,25 @@ pluginmanager::~pluginmanager()
 	this->manager = 0;
 }
 
-void pluginmanager::parsefile(std::string filepath)
+void pluginmanager::parsefile(const std::string filepath)
 {
-	std::ifstream stream = std::ifstream(filepath);
+	if (filepath=="")
+	{
+		return;
+	}
+	std::ifstream stream = std::ifstream();
+	stream.open(filepath);
 	std::string line;
 	int8_t foundline=0;
 	std::string name, path;
 	std::vector<std::string> args, instreams, outstreams;
 	std::tuple<std::string,size_t> tempret;
-	while (stream.eof()==false)
+	if (stream.is_open())
+	{
+		std::cout << "\"" << filepath << "loaded" << std::endl;
+	}
+	
+	while (stream.is_open() && stream.eof()==false)
 	{
 		std::getline(stream, line);
 		if (foundline==0 && line.find("module:")!=std::string::npos)
@@ -87,9 +97,10 @@ bool pluginmanager::addPlugin(const std::string name, const std::string path, co
 int main(int argc, char *argv[])
 {
 	sgraph::pluginmanager pluman;
-	for (uint64_t count=0; count<argc; count++)
+	for (uint64_t count=1; count<argc; count++)
 	{
 		pluman.parsefile(argv[count]);
 	}
+	std::cout << "simplegraph started, press any key to exit" << std::endl;
 	getchar();
 }

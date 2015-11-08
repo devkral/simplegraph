@@ -126,7 +126,7 @@ private:
 public:
 	~pluginmanager();
 	pluginmanager();
-	void parsefile(std::string filepath);
+	void parsefile(const std::string filepath);
 	bool addPlugin(const std::string name, const std::string path, const std::vector<std::string> args, const std::vector<std::string> instreams, const std::vector<std::string> outstreams);
 
 
