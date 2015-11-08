@@ -56,13 +56,13 @@ sgactor *loadActor(const std::string path, std::vector<std::string> args) //, co
 
 class pluginmanager{
 private:
-	sgmanager *manager;
+	sgmanager *manager=0;
 
 public:
 	~pluginmanager();
 	pluginmanager();
 	void parsefile(std::string filepath);
-	bool addPlugin(std::string path);
+	bool addPlugin(const std::string name, const std::string path, const std::vector<std::string> args, const std::vector<std::string> instreams, const std::vector<std::string> outstreams);
 
 
 
