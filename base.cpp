@@ -106,7 +106,7 @@ void sgstreamspec::updateStream(sgstream* streamob)
 	updating_finished.notify_all();
 }
 
-std::shared_ptr<sgstream> sgstreamspec::getStream(bool blocking)
+std::shared_ptr<sgstream> sgstreamspec::getStream(int64_t blockingtime)
 {
 	std::shared_ptr<sgstream> ret;
 	this->protinterests.lock();
@@ -114,20 +114,32 @@ std::shared_ptr<sgstream> sgstreamspec::getStream(bool blocking)
 	this->protinterests.unlock();
 	
 	std::unique_lock<std::mutex> lck (this->finish_lock);
-	bool _updating = this->updating_val;
+	bool success = this->updating_val==false;
 	
-	if (_updating && blocking)
+	if (!success)
 	{
-		this->updating_finished.wait(lck);
-		_updating = false;
+		if (blockingtime==-1)
+		{
+			this->updating_finished.wait(lck);
+			success = true;
+		} else if (blockingtime==0)
+		{
+			lck.unlock();
+		}
+		else
+		{
+			success = (this->updating_finished.wait_for(lck, std::chrono::nanoseconds(blockingtime))==std::cv_status::no_timeout);
+		}
 	}
-	if (_updating)
+	
+	
+	if (!success)
 	{
-		ret = std::shared_ptr<sgstream>(nullptr);
+		ret = std::shared_ptr<sgstream>(0);
 	}
 	else
 	{
-		ret = stream;
+		ret = this->stream;
 	}
 	
 	this->protinterests.lock();
@@ -143,18 +155,18 @@ std::shared_ptr<sgstream> sgstreamspec::getStream(bool blocking)
 
 
 
-sgactor::sgactor(double freq, bool blocking)
+sgactor::sgactor(double freq, int64_t blockingtime)
 {
-	this->blocking = blocking;
+	this->blockingtime = blockingtime;
 	this->time_sleep = std::chrono::nanoseconds((uint64_t)(1000000/freq));
 	this->time_previous = std::chrono::steady_clock::now();
 }
 
 
 
-std::shared_ptr<sgstream> getStreamhelper(sgstreamspec *t, bool blocking)
+std::shared_ptr<sgstream> getStreamhelper(sgstreamspec *t, int64_t blockingtime)
 {
-	return t->getStream(blocking);
+	return t->getStream(blockingtime);
 
 }
 
@@ -170,7 +182,7 @@ std::vector<std::shared_ptr<sgstream>> sgactor::getStreams()
 		{
 			throw(UninitializedStreamException());
 		}
-		handles.push_back(std::async(std::launch::async, getStreamhelper, elem, this->blocking));
+		handles.push_back(std::async(std::launch::async, getStreamhelper, elem, this->blockingtime));
 	}
 	
 	for (std::future<std::shared_ptr<sgstream>> &elem: handles)

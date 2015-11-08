@@ -117,7 +117,7 @@ private:
 	//sgactor *owner;
 
 public:
-	std::shared_ptr<sgstream> getStream(bool blocking);
+	std::shared_ptr<sgstream> getStream(int64_t blockingtime);
 	void updateStream(sgstream* streamob);
 };
 
@@ -135,7 +135,7 @@ protected:
 		t->step();
 	}
 	}
-	bool blocking;
+	int64_t blockingtime;
 	std::chrono::nanoseconds time_sleep;
 	std::vector<std::shared_ptr<sgstream>> getStreams();
 	std::string name;
@@ -145,7 +145,7 @@ protected:
 
 public:
 	virtual ~sgactor(){};
-	sgactor(double freq=1, bool blocking=true);
+	sgactor(double freq=1, int64_t blockingtime=-1);
 	
 	inline const std::string getName(){return this->name;}
 	inline sgmanager* getManager(){return this->manager;}
