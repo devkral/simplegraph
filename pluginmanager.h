@@ -77,10 +77,10 @@ const std::vector<std::string> string_split_multiple(const std::string &inp, siz
 
 
 
-sgactor *loadActor(const std::string path, std::vector<std::string> args)
+sgactor *loadActor(const std::string &path, const double &freq, const int64_t &blocking, const std::vector<std::string> &args)
 {
 	void *soplugin=0;
-	typedef sgactor* (*init_sgnewactor_type) (std::vector<std::string> );
+	typedef sgactor* (*init_sgnewactor_type) (const double, const int64_t, std::vector<std::string> );
 	void *sgnewactor=0;
 #if _WIN32|_WIN64
 	soplugin = LoadLibrary(path.c_str());
@@ -116,7 +116,7 @@ sgactor *loadActor(const std::string path, std::vector<std::string> args)
 		return 0;
 	}
 	init_sgnewactor_type sgnewactor2 = reinterpret_cast<init_sgnewactor_type>(reinterpret_cast<uint64_t>(sgnewactor));
-	return (sgnewactor2)(args);
+	return (sgnewactor2)(freq, blocking,args);
 }
 
 class pluginmanager{
@@ -126,8 +126,8 @@ private:
 public:
 	~pluginmanager();
 	pluginmanager();
-	void parsefile(const std::string filepath);
-	bool addPlugin(const std::string name, const std::string path, const std::vector<std::string> args, const std::vector<std::string> instreams, const std::vector<std::string> outstreams);
+	void parsefile(const std::string &filepath);
+	bool addPlugin(const std::string &name, const std::string &path, const double &freq, const int64_t &blocking, const std::vector<std::string> &args, const std::vector<std::string> &instreams, const std::vector<std::string> &outstreams);
 
 
 

@@ -102,7 +102,7 @@ public:
 
 class sgstream{
 public:
-	//sgstream(){};
+	virtual ~sgstream(){};
 
 };
 
@@ -117,6 +117,7 @@ private:
 	//sgactor *owner;
 
 public:
+	virtual ~sgstreamspec(){};
 	std::shared_ptr<sgstream> getStream(int64_t blockingtime);
 	void updateStream(sgstream* streamob);
 };
@@ -158,8 +159,6 @@ public:
 	void step();
 
 };
-
-
 
 }
 #endif

@@ -16,7 +16,7 @@ pluginmanager::~pluginmanager()
 	this->manager = 0;
 }
 
-void pluginmanager::parsefile(const std::string filepath)
+void pluginmanager::parsefile(const std::string &filepath)
 {
 	if (filepath=="")
 	{
@@ -26,6 +26,8 @@ void pluginmanager::parsefile(const std::string filepath)
 	stream.open(filepath);
 	std::string line;
 	int8_t foundline=0;
+	double freq=1;
+	int64_t blocking=-1;
 	std::string name, path;
 	std::vector<std::string> args, instreams, outstreams;
 	std::tuple<std::string,size_t> tempret;
@@ -44,14 +46,24 @@ void pluginmanager::parsefile(const std::string filepath)
 			foundline=1;
 		} else if(foundline==1 && line.find("module:")!=std::string::npos)
 		{
-			this->addPlugin(name, path, args, instreams, outstreams);
+			this->addPlugin(name, path,freq,blocking, args, instreams, outstreams);
 			tempret = string_split_single(line,line.find("module:")+7);
 			name = std::get<0>(tempret);
 			path="";
+			freq=1;
+			blocking=-1;
 			args.clear();
 			instreams.clear();
 			outstreams.clear();
 			foundline=0;
+		}else if(foundline==1 && line.find("blocking=")!=std::string::npos)
+		{
+			tempret = string_split_single(line,line.find("blocking=")+9);
+			blocking = std::stol(std::get<0>(tempret));
+		}else if(foundline==1 && line.find("frequency=")!=std::string::npos)
+		{
+			tempret = string_split_single(line,line.find("frequency=")+10);
+			freq = std::stod(std::get<0>(tempret));
 		}else if(foundline==1 && line.find("path=")!=std::string::npos)
 		{
 			tempret = string_split_single(line,line.find("path=")+5);
@@ -77,13 +89,13 @@ void pluginmanager::parsefile(const std::string filepath)
 	// add last module, which isn't terminated by module:
 	if (foundline==1)
 	{
-		this->addPlugin(name, path, args, instreams, outstreams);
+		this->addPlugin(name, path,freq,blocking, args, instreams, outstreams);
 	}
 
 }
-bool pluginmanager::addPlugin(const std::string name, const std::string path, const std::vector<std::string> args, const std::vector<std::string> instreams, const std::vector<std::string> outstreams)
+bool pluginmanager::addPlugin(const std::string &name, const std::string &path,  const double &freq, const int64_t &blocking, const std::vector<std::string> &args, const std::vector<std::string> &instreams, const std::vector<std::string> &outstreams)
 {
-	sgactor *actor = loadActor(path, args);
+	sgactor *actor = loadActor(path,freq,blocking, args);
 	if (actor == 0)
 	{
 	
