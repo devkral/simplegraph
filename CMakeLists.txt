@@ -1,13 +1,16 @@
 cmake_minimum_required (VERSION 3.0)
 
-set (CMAKE_CXX_FLAGS "-std=c++11")
-#IF(CMAKE_SYSTEM_NAME STREQUAL Linux OR CMAKE_SYSTEM_NAME STREQUAL Darwin))
-IF(CMAKE_SYSTEM_NAME STREQUAL Windows)
-ELSE()
+#project(simplegraph-base)
+
+set (CMAKE_CXX_FLAGS "-std=c++11" )
+
+#IF(CMAKE_SYSTEM_NAME STREQUAL Windows) #Linux OR CMAKE_SYSTEM_NAME STREQUAL Darwin)
+#ELSE()
+IF(UNIX)
 	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -ldl")
+	#set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -ldl")
 ENDIF()
 
-project(simplegraph-base)
 
 # add the binary tree to the search path for include files
 # so that we will find TutorialConfig.h
@@ -18,4 +21,8 @@ add_library(sgbase SHARED base.cpp)
 # add the executable
 add_executable(pluginmanager pluginmanager.cpp)
 target_link_libraries (pluginmanager sgbase)
-add_subdirectory(plugins)
+
+file (GLOB subplugins "plugins/*")
+foreach(thisplugin ${subplugins})
+	add_subdirectory(${thisplugin})
+endforeach()
