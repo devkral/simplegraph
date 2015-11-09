@@ -11,7 +11,7 @@ ENDIF()
 # so that we will find TutorialConfig.h
 #include_directories("${PROJECT_BINARY_DIR}")
 
-add_library(sgbase base.cpp)
+add_library(sgbase SHARED base.cpp)
 
 # add the executable
 add_executable(pluginmanager pluginmanager.cpp)
