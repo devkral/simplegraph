@@ -12,7 +12,7 @@ void sgmanager::pause()
 	
 }
 
-void sgmanager::interrupt_thread()
+bool sgmanager::interrupt_thread(sgactor *actor)
 {
 	std::unique_lock<std::mutex> lck (this->pause_threads_lock);
 	
@@ -20,6 +20,7 @@ void sgmanager::interrupt_thread()
 	{
 		this->_pause_threads_finished.wait(lck);
 	}
+	return true;
 }
 
 void sgmanager::updateStream(const std::string &name, sgstreamspec* obj)
@@ -173,29 +174,35 @@ std::shared_ptr<sgstream> getStreamhelper(sgstreamspec *t, int64_t blockingtime)
 
 std::vector<std::shared_ptr<sgstream>> sgactor::getStreams()
 {
-	std::vector<std::shared_ptr<sgstream>> ret;
-	std::vector<std::future<std::shared_ptr<sgstream>>> handles;
+	
+	this->_tretgetStreams.clear();
+	this->_thandlesgetStreams.clear();
 	//std::vector<auto> handles;
+	
 	for (sgstreamspec* elem: this->streamsin)
 	{
 		if (elem==0)
 		{
 			throw(UninitializedStreamException());
 		}
-		handles.push_back(std::async(std::launch::async, getStreamhelper, elem, this->blockingtime));
+		_thandlesgetStreams.push_back(std::async(std::launch::async, getStreamhelper, elem, this->blockingtime));
 	}
 	
-	for (std::future<std::shared_ptr<sgstream>> &elem: handles)
+	for (std::future<std::shared_ptr<sgstream>> &elem: _thandlesgetStreams)
 	{
 		elem.wait();
-		ret.push_back(elem.get());
+		_tretgetStreams.push_back(elem.get());
 	}
-	return ret;
+	return _tretgetStreams;
 }
 
 
 void sgactor::step(){
-	this->manager->interrupt_thread();
+	this->active=this->manager->interrupt_thread(this);
+	if (!this->active)
+	{
+		return;
+	}
 	auto tstart =  std::chrono::steady_clock::now();
 	auto tosleep = this->time_sleep-(tstart-this->time_previous);
 	std::this_thread::sleep_for(std::chrono::duration_cast<std::chrono::nanoseconds> (tosleep));
@@ -213,6 +220,8 @@ void sgactor::init(const std::string &name, sgmanager *manager, const std::vecto
 	this->owned_instreams=streamnamesin;
 	this->owned_outstreams=streamnamesout;
 	this->streamsin = manager->getStreamspecs(streamnamesin);
+	this->_tretgetStreams = std::vector<std::shared_ptr<sgstream>> (this->streamsin.size());
+	this->_thandlesgetStreams = std::vector<std::future<std::shared_ptr<sgstream>>> (this->streamsin.size());
 	this->enter(this->streamsin, streamnamesout);
 	this->streamsout = manager->getStreamspecs(streamnamesout);
 }

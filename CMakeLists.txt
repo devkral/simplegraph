@@ -7,6 +7,8 @@ ELSE()
 	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -ldl")
 ENDIF()
 
+project(simplegraph-base)
+
 # add the binary tree to the search path for include files
 # so that we will find TutorialConfig.h
 #include_directories("${PROJECT_BINARY_DIR}")
@@ -16,3 +18,4 @@ add_library(sgbase SHARED base.cpp)
 # add the executable
 add_executable(pluginmanager pluginmanager.cpp)
 target_link_libraries (pluginmanager sgbase)
+add_subdirectory(plugins)

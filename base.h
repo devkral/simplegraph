@@ -91,13 +91,14 @@ protected:
 	bool pause_threads = false;
 	std::mutex pause_threads_lock;
 public:
-	void interrupt_thread();
+	bool interrupt_thread(sgactor *actor);
 	std::vector<sgstreamspec*> getStreamspecs(const std::vector<std::string> &streamnames);
 	std::vector<sgactor*> getActors(const std::vector<std::string> &actornames);
 	void updateStream(const std::string &name, sgstreamspec* obj);
 	void addActor(const std::string &name, sgactor *actor, const std::vector<std::string> &streamnamesin, const std::vector<std::string> &streamnamesout);
+	//void removeActor(const std::string &name);
 	void pause();
-	
+	//void start();
 };
 
 class sgstream{
@@ -128,8 +129,11 @@ private:
 	std::chrono::steady_clock::time_point time_previous;
 	sgmanager* manager; // don't delete
 	std::vector<sgstreamspec*> streamsin;
-	std::vector<sgstreamspec*> streamsout;
+	std::vector<std::shared_ptr<sgstream>> _tretgetStreams;
+	std::vector<std::future<std::shared_ptr<sgstream>>> _thandlesgetStreams;
 protected:
+	std::vector<sgstreamspec*> streamsout;
+	
 	static void thread_wrapper(sgactor *t){
 	while (t->active == true)
 	{
@@ -150,6 +154,8 @@ public:
 	
 	inline const std::string getName(){return this->name;}
 	inline sgmanager* getManager(){return this->manager;}
+	inline const std::vector<std::string> getInstreams(){return this->owned_instreams;}
+	inline const std::vector<std::string> getOutstreams(){return this->owned_outstreams;}
 	//sgactor(bool blocking=true){this->blocking};
 	bool active=true;
 	void init(const std::string &name, sgmanager *manager, const std::vector<std::string> &streamnamesin, const std::vector<std::string> &streamnamesout);
