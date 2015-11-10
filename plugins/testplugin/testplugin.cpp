@@ -2,78 +2,79 @@
 #include "testplugin.h"
 #include <iostream>
 
-void testactor::enter(const std::vector<sgraph::sgstreamspec*> &in, const std::vector<std::string> &out)
+void testprovider::enter(const std::vector<sgraph::sgstreamspec*> &in, const std::vector<std::string> &out)
 {
 	if (in.size()!=0 || out.size()!=1)
 		throw(sgraph::MissingStreamException("?"));
 	for (std::string elem : out)
 	{
 		this->getManager()->updateStream(elem, new teststreamspec());
-		std::cout << "mm name:" << elem << std::endl;
 	}
 }
-//testactor::testactor(){};
-testactor::testactor(const double freq, const int64_t blocking) : sgactor(freq, blocking)
-{
 
-};
-testactor::~testactor() // : sgraph::sgactor::~sgactor()
+void testprovider::run(std::vector<std::shared_ptr<sgraph::sgstream>> in)
 {
-	
-};
-
-void testactor::run(std::vector<std::shared_ptr<sgraph::sgstream>> in)
-{
-
+	streamsout[0]->updateStream(new teststream(3));
 
 }
-void testactor::leave()
+void testprovider::leave()
 {
-
 
 }
 
 
-void testactor2::enter(const std::vector<sgraph::sgstreamspec*> &in, const std::vector<std::string> &out)
+void testtransformer::enter(const std::vector<sgraph::sgstreamspec*> &in, const std::vector<std::string> &out)
 {
 	if (in.size()!=1 || out.size()!=1)
-		throw(std::exception());
-	for (sgraph::sgstreamspec* elem : in)
-	{
-		//std::cout << "in name:" << elem->getName() << std::endl;
-	}
+		throw(sgraph::MissingStreamException("?"));
 	for (std::string elem : out)
 	{
 		this->getManager()->updateStream(elem, new teststreamspec());
-		std::cout << "out name:" << elem << std::endl;
 	}
 }
 
-testactor2::testactor2() : sgactor()
+void testtransformer::run(std::vector<std::shared_ptr<sgraph::sgstream>> in)
 {
-
-};
-testactor2::~testactor2() // : sgraph::sgactor::~sgactor()
-{
-	
-};
-
-void testactor2::run(std::vector<std::shared_ptr<sgraph::sgstream>> in)
-{
-
+	streamsout[0]->updateStream(new teststream(((teststream*)in[0].get())->testout));
 
 }
-void testactor2::leave()
+void testtransformer::leave()
 {
 
+}
+
+
+void testconsumer::enter(const std::vector<sgraph::sgstreamspec*> &in, const std::vector<std::string> &out)
+{
+	if (in.size()!=1 || out.size()!=0)
+		throw(sgraph::MissingStreamException("?"));
+}
+
+void testconsumer::run(std::vector<std::shared_ptr<sgraph::sgstream>> in)
+{
+	std::cout << ((teststream*)in[0].get())->testout << std::endl;
 
 }
+void testconsumer::leave()
+{
+
+}
+
 
 
 sgraph::sgactor *create_pluginactor(const double freq, const int64_t blocking, const std::vector<std::string> args)
 {
-	//testactor(freq, blocking);
-	return static_cast<sgraph::sgactor*>(new testactor(freq, blocking));
 
+	if (args[0]=="provider")
+	{
+		return static_cast<sgraph::sgactor*>(new testprovider(freq, blocking));
+	}else if (args[0]=="transformer")
+	{
+		return static_cast<sgraph::sgactor*>(new testtransformer(freq, blocking));
+	}else if (args[0]=="consumer")
+	{
+		return static_cast<sgraph::sgactor*>(new testconsumer(freq, blocking));
+	}
+	else return 0;
 }
 
