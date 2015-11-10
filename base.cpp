@@ -80,6 +80,7 @@ void sgmanager::addActor(const std::string &name, sgactor *actor, const std::vec
 	{
 		throw(NameCollisionException("Actor: \""+name+"\" already exists"));
 	}
+	
 	actor->init(name, this, streamnamesin, streamnamesout);
 	this->actordict[name] = std::shared_ptr<sgactor>(actor);
 }
@@ -217,8 +218,8 @@ void sgactor::init(const std::string &name, sgmanager *manager, const std::vecto
 {
 	this->name = name;
 	this->manager = manager;
-	this->owned_instreams=streamnamesin;
-	this->owned_outstreams=streamnamesout;
+	this->owned_instreams.insert(streamnamesin.begin(),streamnamesin.end());
+	this->owned_outstreams.insert(streamnamesout.begin(),streamnamesout.end());
 	this->streamsin = manager->getStreamspecs(streamnamesin);
 	this->_tretgetStreams = std::vector<std::shared_ptr<sgstream>> (this->streamsin.size());
 	this->_thandlesgetStreams = std::vector<std::future<std::shared_ptr<sgstream>>> (this->streamsin.size());

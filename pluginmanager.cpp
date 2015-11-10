@@ -33,7 +33,7 @@ void pluginmanager::parsefile(const std::string &filepath)
 	std::tuple<std::string,size_t> tempret;
 	if (stream.is_open())
 	{
-		std::cout << "\"" << filepath << "loaded" << std::endl;
+		std::cout << "\"" << filepath << "\" loaded" << std::endl;
 	}
 	
 	while (stream.is_open() && stream.eof()==false)
@@ -111,8 +111,17 @@ int main(int argc, char *argv[])
 	sgraph::pluginmanager pluman;
 	for (uint64_t count=1; count<argc; count++)
 	{
-		pluman.parsefile(argv[count]);
+		try{
+			pluman.parsefile(argv[count]);
+		}
+		catch(std::exception e)
+		{
+			std::cerr << "Caught exception:" << std::endl;
+			std::cerr << e.what() << std::endl;
+			return 1;
+		}
 	}
 	std::cout << "simplegraph started, press any key to exit" << std::endl;
 	getchar();
+	return 0;
 }

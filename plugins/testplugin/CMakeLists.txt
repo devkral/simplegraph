@@ -5,5 +5,5 @@ include_directories(
 	../../
 )
 
-add_executable(testplugin testplugin.cpp)
+add_library(testplugin SHARED testplugin.cpp)
 target_link_libraries (testplugin sgbase)

@@ -1,19 +1,19 @@
 
-#include "test.h"
+#include "testplugin.h"
 #include <iostream>
 
 void testactor::enter(const std::vector<sgraph::sgstreamspec*> &in, const std::vector<std::string> &out)
 {
 	if (in.size()!=0 || out.size()!=1)
-		throw(std::exception());
+		throw(sgraph::MissingStreamException("?"));
 	for (std::string elem : out)
 	{
 		this->getManager()->updateStream(elem, new teststreamspec());
 		std::cout << "mm name:" << elem << std::endl;
 	}
 }
-
-testactor::testactor() : sgactor()
+//testactor::testactor(){};
+testactor::testactor(const double freq, const int64_t blocking) : sgactor(freq, blocking)
 {
 
 };
@@ -70,31 +70,10 @@ void testactor2::leave()
 }
 
 
-int main()
+sgraph::sgactor *create_pluginactor(const double freq, const int64_t blocking, const std::vector<std::string> args)
 {
-	
-	sgraph::sgmanager man;
-	
-	std::vector<std::string> ac1streamsin;
-	std::vector<std::string> ac1streamsout;
-	ac1streamsout.push_back("stream1");
-	std::vector<std::string> ac2streamsin;
-	std::vector<std::string> ac2streamsout;
-	ac2streamsin.push_back("stream1");
-	ac2streamsout.push_back("stream2");
-	man.addActor("actor1",static_cast<sgraph::sgactor*>(new testactor), ac1streamsin, ac1streamsout);
-	man.addActor("actor2",static_cast<sgraph::sgactor*>(new testactor2), ac2streamsin, ac2streamsout);
-	
-	std::vector<std::string> actorsretrieve;
-	actorsretrieve.push_back("actor1");
-	actorsretrieve.push_back("actor2");
-	for (sgraph::sgactor* actor : man.getActors(actorsretrieve))
-	{
-		std::cout << "Mega:" << actor->getName() << std::endl;
-	
-	}
-	
-	
-	
-	
+	//testactor(freq, blocking);
+	return static_cast<sgraph::sgactor*>(new testactor(freq, blocking));
+
 }
+

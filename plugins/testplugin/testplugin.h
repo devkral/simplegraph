@@ -1,8 +1,11 @@
 
+
+#include "base.h"
+
 #ifndef TEST1_H
 #define TEST1_H
 
-#include "../../base.h"
+
 
 class teststreamspec : public sgraph::sgstreamspec{
 public:
@@ -11,7 +14,7 @@ public:
 };
 class testactor : public sgraph::sgactor{
 public:
-	testactor();
+	testactor(const double freq, const int64_t blocking);
 	~testactor();
 	void enter(const std::vector<sgraph::sgstreamspec*> &in, const std::vector<std::string> &out);
 	void run(const std::vector<std::shared_ptr<sgraph::sgstream>> in);
@@ -28,6 +31,9 @@ public:
 
 };
 
+
+
+extern "C" sgraph::sgactor* create_pluginactor(const double freq, const int64_t blocking, const std::vector<std::string> args);
 
 
 #endif

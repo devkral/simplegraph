@@ -14,6 +14,7 @@
 #include <cstdint>
 #include <chrono>
 #include <string>
+#include <set>
 
 
 namespace sgraph{
@@ -145,8 +146,8 @@ protected:
 	std::vector<std::shared_ptr<sgstream>> getStreams();
 	std::string name;
 	
-	std::vector<std::string> owned_instreams;
-	std::vector<std::string> owned_outstreams;
+	std::set<std::string> owned_instreams;
+	std::set<std::string> owned_outstreams;
 
 public:
 	virtual ~sgactor(){};
@@ -154,8 +155,8 @@ public:
 	
 	inline const std::string getName(){return this->name;}
 	inline sgmanager* getManager(){return this->manager;}
-	inline const std::vector<std::string> getInstreams(){return this->owned_instreams;}
-	inline const std::vector<std::string> getOutstreams(){return this->owned_outstreams;}
+	inline const std::set<std::string> getInstreams(){return this->owned_instreams;}
+	inline const std::set<std::string> getOutstreams(){return this->owned_outstreams;}
 	//sgactor(bool blocking=true){this->blocking};
 	bool active=true;
 	void init(const std::string &name, sgmanager *manager, const std::vector<std::string> &streamnamesin, const std::vector<std::string> &streamnamesout);

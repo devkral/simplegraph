@@ -56,7 +56,7 @@ const std::tuple<std::string, size_t> string_split_single(const std::string &inp
 	{
 		return std::tuple<std::string, size_t>("", last+1);
 	}
-	return std::tuple<std::string, size_t>(inp.substr(first, (last-1)-first), last+1);
+	return std::tuple<std::string, size_t>(inp.substr(first, (last)-first), last+1);
 }
 
 const std::vector<std::string> string_split_multiple(const std::string &inp, size_t startpos=0)
@@ -80,15 +80,17 @@ const std::vector<std::string> string_split_multiple(const std::string &inp, siz
 sgactor *loadActor(const std::string &path, const double &freq, const int64_t &blocking, const std::vector<std::string> &args)
 {
 	void *soplugin=0;
-	typedef sgactor* (*init_sgnewactor_type) (const double, const int64_t, std::vector<std::string> );
+	typedef sgactor* (*init_sgnewactor_type) (const double, const int64_t, const std::vector<std::string> );
 	void *sgnewactor=0;
+	sgactor *ret=0;
 #if _WIN32|_WIN64
 	soplugin = LoadLibrary(path.c_str());
 #else
 //#elif __unix__
-	soplugin = dlopen(path.c_str(), RTLD_LAZY);
+	soplugin = dlopen(path.c_str(), RTLD_LAZY|RTLD_NODELETE);
+	dlerror(); // clears existing error messages
 #endif
-
+	
 	if (soplugin == 0)
 	{
 		std::cerr << "Error: \"" << path << "\" cannot be loaded" << std::endl;
@@ -99,24 +101,29 @@ sgactor *loadActor(const std::string &path, const double &freq, const int64_t &b
 	sgnewactor = GetProcAddress(soplugin,"create_pluginactor");
 #else
 //#elif __unix__
-	sgnewactor = dlsym(soplugin,"create_pluginactor");
+	sgnewactor = dlsym(soplugin, "create_pluginactor");
+	//std::cerr << dlerror() << std::endl;
 #endif
 //reinterpret_cast<init_sgnewactor_type> (
 
+	
+	if (sgnewactor == 0)
+	{
+		std::cerr << "Error: \"" << path << "\" could not load: create_pluginactor" << std::endl;
+		ret = 0;
+	}
+	else
+	{
+		init_sgnewactor_type sgnewactor2 = reinterpret_cast<init_sgnewactor_type>(reinterpret_cast<uint64_t>(sgnewactor));
+		ret = (sgnewactor2)(freq, blocking, args);
+	}
 #if _WIN32|_WIN64
 	FreeLibrary(soplugin);
 #else
 //#elif __unix__
 	dlclose(soplugin);
 #endif
-
-	if (sgnewactor == 0)
-	{
-		std::cerr << "Error: \"" << path << "\" has not attribute: create_pluginactor " << std::endl;
-		return 0;
-	}
-	init_sgnewactor_type sgnewactor2 = reinterpret_cast<init_sgnewactor_type>(reinterpret_cast<uint64_t>(sgnewactor));
-	return (sgnewactor2)(freq, blocking,args);
+	return ret;
 }
 
 class pluginmanager{
