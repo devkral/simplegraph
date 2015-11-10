@@ -29,12 +29,7 @@ void sgmanager::stop()
 	
 	for (auto it: this->actordict)
 	{
-		it.second->leave();
-	}
-	
-	for (auto it: this->actordict)
-	{
-		it.second->join();
+		it.second->stop();
 	}
 }
 
@@ -117,15 +112,24 @@ void sgmanager::addActor(const std::string &name, sgactor *actor, const std::vec
 void sgstreamspec::updateStream(sgstream* streamob)
 {
 	this->protaccess.lock();
-	if (interests>0)
+	/**if (interests>0)
 	{
-		std::unique_lock<std::mutex> lck(this->protaccess, std::adopt_lock);
+		std::unique_lock<std::recursive_mutex> lck(this->protaccess, std::adopt_lock);
 		this->reading_finished.wait(lck);
-	}
+	}*/
 	
+	if (this->is_stopping)
+	{
+		return;
+	}
 	this->stream = std::shared_ptr<sgstream> (streamob);
 	
 	updating_finished.notify_all();
+	this->protaccess.unlock();
+}
+void sgstreamspec::stop()
+{
+	this->is_stopping=true;
 	this->protaccess.unlock();
 }
 
@@ -134,18 +138,21 @@ std::shared_ptr<sgstream> sgstreamspec::getStream(int64_t blockingtime)
 	std::shared_ptr<sgstream> ret;
 	
 	this->protaccess.lock();
-	std::unique_lock<std::mutex> lck(this->protaccess, std::adopt_lock);
+	//std::unique_lock<std::recursive_mutex> lck(this->protaccess, std::adopt_lock);
 	if (blockingtime==-1)
 	{
-		this->updating_finished.wait(lck);
+		this->updating_finished.wait(this->protaccess);
 	}else if (blockingtime>0)
 	{
-		if (this->updating_finished.wait_for(lck, std::chrono::nanoseconds(blockingtime)) == std::cv_status::timeout)
+		if (this->updating_finished.wait_for(this->protaccess, std::chrono::nanoseconds(blockingtime)) == std::cv_status::timeout)
 		{
 			return std::shared_ptr<sgstream> (0);
 		}
 	}
-	
+	if (this->is_stopping)
+	{
+		return std::shared_ptr<sgstream> (0);
+	}
 	ret = this->stream;
 	
 	this->reading_finished.notify_one();
@@ -159,12 +166,17 @@ std::shared_ptr<sgstream> sgstreamspec::getStream(int64_t blockingtime)
 sgactor::sgactor(double freq, int64_t blockingtime)
 {
 	this->blockingtime = blockingtime;
+	this->time_lock.lock();
 	this->time_sleep = std::chrono::nanoseconds((int64_t)(1000000000.0L/freq));
 	this->time_previous = std::chrono::steady_clock::now();
 }
 
-void sgactor::join()
+void sgactor::stop()
 {
+	this->active=false;
+	this->time_lock.unlock();
+	this->leave();
+
 	if (this->intern_thread)
 	{
 		this->intern_thread->join();
@@ -212,7 +224,10 @@ void sgactor::step(){
 	}
 	auto tstart =  std::chrono::steady_clock::now();
 	auto tosleep = this->time_sleep-(tstart-this->time_previous);
-	std::this_thread::sleep_for(std::chrono::duration_cast<std::chrono::nanoseconds> (tosleep));
+	if (this->time_lock.try_lock_for(std::chrono::duration_cast<std::chrono::nanoseconds> (tosleep)))
+	{
+		return;
+	}
 
 	this->run(this->getStreams());
 

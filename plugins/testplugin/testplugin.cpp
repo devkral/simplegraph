@@ -13,6 +13,8 @@ void testprovider::enter(const std::vector<sgraph::sgstreamspec*> &in, const std
 	}
 	std::cout << "Name: " << this->getName() << std::endl;
 	this->intern_thread=new std::thread(sgraph::sgactor::thread_wrapper, this);
+	
+	std::cout << "No:" << std::chrono::duration_cast<std::chrono::nanoseconds>(this->time_sleep).count() << std::endl;
 }
 
 void testprovider::run(std::vector<std::shared_ptr<sgraph::sgstream>> in)

@@ -113,12 +113,9 @@ public:
 
 class sgstreamspec{
 private:
-	std::mutex protaccess;
-	bool is_updating=false;
-	uint64_t interests=0;
-	std::mutex protinterests;
-	std::mutex finish_lock;
-	std::condition_variable updating_finished, reading_finished;
+	std::recursive_mutex protaccess;
+	bool is_updating=false, is_stopping=false;
+	std::condition_variable_any updating_finished, reading_finished;
 	std::shared_ptr<sgstream> stream;
 	//sgactor *owner;
 
@@ -126,6 +123,7 @@ public:
 	virtual ~sgstreamspec(){};
 	std::shared_ptr<sgstream> getStream(int64_t blockingtime);
 	void updateStream(sgstream* streamob);
+	void stop();
 };
 
 
@@ -133,6 +131,7 @@ class sgactor{
 private:
 	std::chrono::steady_clock::time_point time_previous;
 	sgmanager* manager; // don't delete
+	std::timed_mutex time_lock;
 	std::vector<sgstreamspec*> streamsin;
 	std::vector<std::shared_ptr<sgstream>> _tretgetStreams;
 	std::vector<std::future<std::shared_ptr<sgstream>>> _thandlesgetStreams;
@@ -157,7 +156,7 @@ protected:
 public:
 	virtual ~sgactor(){};
 	sgactor(double freq=1, int64_t blockingtime=-1);
-	void join();
+	void stop();
 	inline const std::string getName(){return this->name;}
 	inline sgmanager* getManager(){return this->manager;}
 	inline const std::set<std::string> getInstreams(){return this->owned_instreams;}

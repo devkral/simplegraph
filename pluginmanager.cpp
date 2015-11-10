@@ -26,7 +26,7 @@ void pluginmanager::parsefile(const std::string &filepath)
 	stream.open(filepath);
 	std::string line;
 	bool foundline=false;
-	double freq=1;
+	double freq=1.0;
 	int64_t blocking=-1;
 	size_t limitpos;
 	std::string name, path;
@@ -52,7 +52,7 @@ void pluginmanager::parsefile(const std::string &filepath)
 			tempret = string_split_single(line,line.find("module:")+7,limitpos);
 			name = std::get<0>(tempret);
 			path="";
-			freq=1;
+			freq=1.0;
 			blocking=-1;
 			args.clear();
 			instreams.clear();
