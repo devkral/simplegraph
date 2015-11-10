@@ -27,11 +27,34 @@ const char _filesysdelimiter = '\\';
 const char _filesysdelimiter = '/';
 #endif
 
-const std::tuple<std::string, size_t> string_split_single(const std::string &inp, size_t startpos=0)
+
+const size_t find_comment(const std::string &inp, size_t startpos=0, size_t limitpos=std::string::npos)
+{
+	bool isopen=false;
+	size_t pos=startpos, poscomment;
+	poscomment=inp.find_first_of('#', pos);
+	pos=inp.find_first_of('"', pos);
+	while (pos<limitpos)
+	{
+		if (!isopen)
+		{
+			if (poscomment<pos)
+				return poscomment;
+			poscomment=inp.find_first_of('#', pos);
+		}
+		isopen = (false==isopen);
+
+		pos=inp.find_first_of('"', pos+1);
+	}
+	return limitpos;
+}
+
+
+const std::tuple<std::string, size_t> string_split_single(const std::string &inp, size_t startpos=0, size_t limitpos=std::string::npos)
 {
 	size_t first=startpos,last=0;
 	first=inp.find_first_of('"', first);
-	if (first==std::string::npos)
+	if (first>=limitpos)
 	{
 		return std::tuple<std::string, size_t>("", std::string::npos);
 	}
@@ -43,11 +66,11 @@ const std::tuple<std::string, size_t> string_split_single(const std::string &inp
 	}
 	first += 1; // set to first character
 	last=inp.find_first_of('"', first);
-	while (last==std::string::npos && inp.at(last-1)=='\\')
+	while (last<limitpos && inp.at(last-1)=='\\')
 	{
 		last=inp.find_first_of('"', last+1);
 	}
-	if (last==std::string::npos)
+	if (last>=limitpos)
 	{
 		std::cerr << "Error: \" not closed: \"" << inp << "\"" << std::endl;
 		return std::tuple<std::string, size_t>("", std::string::npos);
@@ -59,16 +82,16 @@ const std::tuple<std::string, size_t> string_split_single(const std::string &inp
 	return std::tuple<std::string, size_t>(inp.substr(first, (last)-first), last+1);
 }
 
-const std::vector<std::string> string_split_multiple(const std::string &inp, size_t startpos=0)
+const std::vector<std::string> string_split_multiple(const std::string &inp, size_t startpos=0, size_t limitpos=std::string::npos)
 {
 	std::vector<std::string> ret;
 	size_t pos=startpos;
-	std::tuple<std::string, size_t> temp = string_split_single(inp, pos);
-	while (std::get<1>(temp)!=std::string::npos)
+	std::tuple<std::string, size_t> temp = string_split_single(inp, pos, limitpos);
+	while (std::get<1>(temp)<limitpos)
 	{
 		pos = std::get<1>(temp);
 		ret.push_back(std::get<0>(temp));
-		temp = string_split_single(inp, pos);
+		temp = string_split_single(inp, pos, limitpos);
 	}
 	return ret;
 }

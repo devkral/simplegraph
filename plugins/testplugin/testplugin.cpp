@@ -8,8 +8,10 @@ void testprovider::enter(const std::vector<sgraph::sgstreamspec*> &in, const std
 		throw(sgraph::MissingStreamException("?"));
 	for (std::string elem : out)
 	{
-		this->getManager()->updateStream(elem, new teststreamspec());
+		std::cout << "Provider inits:" << elem << std::endl;
+		this->getManager()->updateStreamspec(elem, new teststreamspec());
 	}
+	std::cout << "Name: " << this->getName() << std::endl;
 }
 
 void testprovider::run(std::vector<std::shared_ptr<sgraph::sgstream>> in)
@@ -25,12 +27,15 @@ void testprovider::leave()
 
 void testtransformer::enter(const std::vector<sgraph::sgstreamspec*> &in, const std::vector<std::string> &out)
 {
+	std::cout << "transformer consumes:" << *this->getInstreams().begin() << std::endl;
 	if (in.size()!=1 || out.size()!=1)
 		throw(sgraph::MissingStreamException("?"));
 	for (std::string elem : out)
-	{
-		this->getManager()->updateStream(elem, new teststreamspec());
+	{	
+		std::cout << "transformer inits:" << elem << std::endl;
+		this->getManager()->updateStreamspec(elem, new teststreamspec());
 	}
+	std::cout << "Name: " << this->getName() << std::endl;
 }
 
 void testtransformer::run(std::vector<std::shared_ptr<sgraph::sgstream>> in)
@@ -46,8 +51,12 @@ void testtransformer::leave()
 
 void testconsumer::enter(const std::vector<sgraph::sgstreamspec*> &in, const std::vector<std::string> &out)
 {
+	
+	std::cout << "consumer consumes:" << *this->getInstreams().begin() << std::endl;
 	if (in.size()!=1 || out.size()!=0)
 		throw(sgraph::MissingStreamException("?"));
+		
+	std::cout << "Name: " << this->getName() << std::endl;
 }
 
 void testconsumer::run(std::vector<std::shared_ptr<sgraph::sgstream>> in)

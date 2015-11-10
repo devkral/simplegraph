@@ -95,7 +95,7 @@ public:
 	bool interrupt_thread(sgactor *actor);
 	std::vector<sgstreamspec*> getStreamspecs(const std::vector<std::string> &streamnames);
 	std::vector<sgactor*> getActors(const std::vector<std::string> &actornames);
-	void updateStream(const std::string &name, sgstreamspec* obj);
+	void updateStreamspec(const std::string &name, sgstreamspec* obj);
 	void addActor(const std::string &name, sgactor *actor, const std::vector<std::string> &streamnamesin, const std::vector<std::string> &streamnamesout);
 	//void removeActor(const std::string &name);
 	void pause();

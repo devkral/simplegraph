@@ -25,9 +25,10 @@ void pluginmanager::parsefile(const std::string &filepath)
 	std::ifstream stream = std::ifstream();
 	stream.open(filepath);
 	std::string line;
-	int8_t foundline=0;
+	bool foundline=false;
 	double freq=1;
 	int64_t blocking=-1;
+	size_t limitpos;
 	std::string name, path;
 	std::vector<std::string> args, instreams, outstreams;
 	std::tuple<std::string,size_t> tempret;
@@ -39,15 +40,16 @@ void pluginmanager::parsefile(const std::string &filepath)
 	while (stream.is_open() && stream.eof()==false)
 	{
 		std::getline(stream, line);
-		if (foundline==0 && line.find("module:")!=std::string::npos)
+		limitpos = find_comment(line);
+		if (foundline==false && line.find("module:")<limitpos)
 		{
-			tempret = string_split_single(line,line.find("module:")+7);
+			tempret = string_split_single(line,line.find("module:")+7,limitpos);
 			name = std::get<0>(tempret);
-			foundline=1;
-		} else if(foundline==1 && line.find("module:")!=std::string::npos)
+			foundline=true;
+		} else if(foundline==true && line.find("module:")<limitpos)
 		{
 			this->addPlugin(name, path,freq,blocking, args, instreams, outstreams);
-			tempret = string_split_single(line,line.find("module:")+7);
+			tempret = string_split_single(line,line.find("module:")+7,limitpos);
 			name = std::get<0>(tempret);
 			path="";
 			freq=1;
@@ -55,39 +57,39 @@ void pluginmanager::parsefile(const std::string &filepath)
 			args.clear();
 			instreams.clear();
 			outstreams.clear();
-			foundline=0;
-		}else if(foundline==1 && line.find("blocking=")!=std::string::npos)
+			foundline=true;
+		}else if(foundline==true && line.find("blocking=")<limitpos)
 		{
-			tempret = string_split_single(line,line.find("blocking=")+9);
+			tempret = string_split_single(line,line.find("blocking=")+9,limitpos);
 			blocking = std::stol(std::get<0>(tempret));
-		}else if(foundline==1 && line.find("frequency=")!=std::string::npos)
+		}else if(foundline==true && line.find("frequency=")<limitpos)
 		{
-			tempret = string_split_single(line,line.find("frequency=")+10);
+			tempret = string_split_single(line,line.find("frequency=")+10,limitpos);
 			freq = std::stod(std::get<0>(tempret));
-		}else if(foundline==1 && line.find("path=")!=std::string::npos)
+		}else if(foundline==true && line.find("path=")<limitpos)
 		{
-			tempret = string_split_single(line,line.find("path=")+5);
+			tempret = string_split_single(line,line.find("path=")+5,limitpos);
 			path = std::get<0>(tempret);
 			if (path=="")
 			{
 				path=(std::string)"plugins"+_filesysdelimiter+name+_filesysdelimiter+name;
 			}
-		}else if(foundline==1 && line.find("args=")!=std::string::npos)
+		}else if(foundline==true && line.find("args=")<limitpos)
 		{
-			args = string_split_multiple(line, line.find("args=")+5);
-		}else if(foundline==1 && line.find("instreams=")!=std::string::npos)
+			args = string_split_multiple(line, line.find("args=")+5,limitpos);
+		}else if(foundline==true && line.find("instreams=")<limitpos)
 		{
-			instreams = string_split_multiple(line, line.find("instreams=")+10);
-		}else if(foundline==1 && line.find("outstreams=")!=std::string::npos)
+			instreams = string_split_multiple(line, line.find("instreams=")+10,limitpos);
+		}else if(foundline==true && line.find("outstreams=")<limitpos)
 		{
-			outstreams = string_split_multiple(line, line.find("outstreams=")+11);
+			outstreams = string_split_multiple(line, line.find("outstreams=")+11,limitpos);
 		}
 		
 		
 	}
 	stream.close();
 	// add last module, which isn't terminated by module:
-	if (foundline==1)
+	if (foundline==true)
 	{
 		this->addPlugin(name, path,freq,blocking, args, instreams, outstreams);
 	}

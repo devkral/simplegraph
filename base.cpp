@@ -23,7 +23,7 @@ bool sgmanager::interrupt_thread(sgactor *actor)
 	return true;
 }
 
-void sgmanager::updateStream(const std::string &name, sgstreamspec* obj)
+void sgmanager::updateStreamspec(const std::string &name, sgstreamspec* obj)
 {
 	this->streamdict.at(name).reset(obj);
 }
