@@ -116,68 +116,41 @@ void sgmanager::addActor(const std::string &name, sgactor *actor, const std::vec
 
 void sgstreamspec::updateStream(sgstream* streamob)
 {
-	
-	std::unique_lock<std::mutex> lck (this->finish_lock);
-	this->updating_val = true;
-	if (this->reading_val)
+	this->protaccess.lock();
+	if (interests>0)
 	{
+		std::unique_lock<std::mutex> lck(this->protaccess, std::adopt_lock);
 		this->reading_finished.wait(lck);
 	}
+	
 	this->stream = std::shared_ptr<sgstream> (streamob);
-	this->protinterests.lock();
-	this->updating_val = false;
-	if (this->interests>0)
-	{
-		this->reading_val=true;
-	}
-	this->protinterests.unlock();
+	
 	updating_finished.notify_all();
+	this->protaccess.unlock();
 }
 
 std::shared_ptr<sgstream> sgstreamspec::getStream(int64_t blockingtime)
 {
 	std::shared_ptr<sgstream> ret;
-	this->protinterests.lock();
-	this->interests += 1;
-	this->protinterests.unlock();
 	
-	std::unique_lock<std::mutex> lck (this->finish_lock);
-	bool success = this->updating_val==false;
-	
-	if (!success)
+	this->protaccess.lock();
+	std::unique_lock<std::mutex> lck(this->protaccess, std::adopt_lock);
+	if (blockingtime==-1)
 	{
-		if (blockingtime==-1)
+		this->updating_finished.wait(lck);
+	}else if (blockingtime>0)
+	{
+		if (this->updating_finished.wait_for(lck, std::chrono::nanoseconds(blockingtime)) == std::cv_status::timeout)
 		{
-			this->updating_finished.wait(lck);
-			success = true;
-		} else if (blockingtime==0)
-		{
-			lck.unlock();
-		}
-		else
-		{
-			success = (this->updating_finished.wait_for(lck, std::chrono::nanoseconds(blockingtime))==std::cv_status::no_timeout);
+			return std::shared_ptr<sgstream> (0);
 		}
 	}
 	
+	ret = this->stream;
 	
-	if (!success)
-	{
-		ret = std::shared_ptr<sgstream>(0);
-	}
-	else
-	{
-		ret = this->stream;
-	}
+	this->reading_finished.notify_one();
 	
-	this->protinterests.lock();
-	this->interests -= 1;
-	if (this->interests==0)
-	{
-		this->reading_val=false;
-		this->reading_finished.notify_all();
-	}
-	this->protinterests.unlock();
+	this->protaccess.unlock();
 	return ret;
 }
 
@@ -186,7 +159,7 @@ std::shared_ptr<sgstream> sgstreamspec::getStream(int64_t blockingtime)
 sgactor::sgactor(double freq, int64_t blockingtime)
 {
 	this->blockingtime = blockingtime;
-	this->time_sleep = std::chrono::nanoseconds((uint64_t)(1000000/freq));
+	this->time_sleep = std::chrono::nanoseconds((int64_t)(1000000.0L/freq));
 	this->time_previous = std::chrono::steady_clock::now();
 }
 

@@ -12,8 +12,8 @@
 
 class teststream : public sgraph::sgstream{
 public:
-	teststream(int in){testout=in;}
-	int testout=0;
+	teststream(uint64_t in){testout=in;}
+	uint64_t testout=0;
 
 };
 

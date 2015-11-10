@@ -113,8 +113,9 @@ public:
 
 class sgstreamspec{
 private:
-	bool updating_val=false, reading_val=false;
-	uint32_t interests=0;
+	std::mutex protaccess;
+	bool is_updating=false;
+	uint64_t interests=0;
 	std::mutex protinterests;
 	std::mutex finish_lock;
 	std::condition_variable updating_finished, reading_finished;

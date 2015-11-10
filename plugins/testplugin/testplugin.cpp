@@ -17,7 +17,7 @@ void testprovider::enter(const std::vector<sgraph::sgstreamspec*> &in, const std
 
 void testprovider::run(std::vector<std::shared_ptr<sgraph::sgstream>> in)
 {
-	streamsout[0]->updateStream(new teststream(3));
+	streamsout[0]->updateStream(new teststream(std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count()));
 
 }
 void testprovider::leave()
