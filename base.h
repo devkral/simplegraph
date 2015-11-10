@@ -89,9 +89,11 @@ private:
 	std::condition_variable _pause_threads_finished;
 
 protected:
+	bool active=true;
 	bool pause_threads = false;
 	std::mutex pause_threads_lock;
 public:
+	virtual ~sgmanager(){this->stop();}
 	bool interrupt_thread(sgactor *actor);
 	std::vector<sgstreamspec*> getStreamspecs(const std::vector<std::string> &streamnames);
 	std::vector<sgactor*> getActors(const std::vector<std::string> &actornames);
@@ -99,7 +101,8 @@ public:
 	void addActor(const std::string &name, sgactor *actor, const std::vector<std::string> &streamnamesin, const std::vector<std::string> &streamnamesout);
 	//void removeActor(const std::string &name);
 	void pause();
-	//void start();
+	void stop();
+	void start();
 };
 
 class sgstream{
@@ -133,13 +136,14 @@ private:
 	std::vector<std::shared_ptr<sgstream>> _tretgetStreams;
 	std::vector<std::future<std::shared_ptr<sgstream>>> _thandlesgetStreams;
 protected:
+	std::thread *intern_thread=0;
 	std::vector<sgstreamspec*> streamsout;
-	
+
 	static void thread_wrapper(sgactor *t){
-	while (t->active == true)
-	{
-		t->step();
-	}
+		while (t->active == true)
+		{
+			t->step();
+		}
 	}
 	int64_t blockingtime;
 	std::chrono::nanoseconds time_sleep;
@@ -152,7 +156,7 @@ protected:
 public:
 	virtual ~sgactor(){};
 	sgactor(double freq=1, int64_t blockingtime=-1);
-	
+	void join();
 	inline const std::string getName(){return this->name;}
 	inline sgmanager* getManager(){return this->manager;}
 	inline const std::set<std::string> getInstreams(){return this->owned_instreams;}

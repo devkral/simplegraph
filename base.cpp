@@ -9,7 +9,33 @@ void sgmanager::pause()
 	this->pause_threads = true;
 	this->pause_threads_lock.unlock();
 	//for (std::tuple<>)
+}
+void sgmanager::start()
+{
+	this->pause_threads_lock.lock();
+	this->pause_threads = false;
+	this->pause_threads_lock.unlock();
+	this->_pause_threads_finished.notify_all();
+	//for (std::tuple<>)
+}
+
+void sgmanager::stop()
+{
+	this->pause_threads_lock.lock();
+	this->pause_threads = false;
+	this->active=false;
+	this->pause_threads_lock.unlock();
+	this->_pause_threads_finished.notify_all();
 	
+	for (auto it: this->actordict)
+	{
+		it.second->leave();
+	}
+	
+	for (auto it: this->actordict)
+	{
+		it.second->join();
+	}
 }
 
 bool sgmanager::interrupt_thread(sgactor *actor)
@@ -20,7 +46,7 @@ bool sgmanager::interrupt_thread(sgactor *actor)
 	{
 		this->_pause_threads_finished.wait(lck);
 	}
-	return true;
+	return this->active;
 }
 
 void sgmanager::updateStreamspec(const std::string &name, sgstreamspec* obj)
@@ -164,7 +190,14 @@ sgactor::sgactor(double freq, int64_t blockingtime)
 	this->time_previous = std::chrono::steady_clock::now();
 }
 
-
+void sgactor::join()
+{
+	if (this->intern_thread)
+	{
+		this->intern_thread->join();
+		delete this->intern_thread;
+	}
+}
 
 std::shared_ptr<sgstream> getStreamhelper(sgstreamspec *t, int64_t blockingtime)
 {
