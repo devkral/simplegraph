@@ -159,7 +159,7 @@ std::shared_ptr<sgstream> sgstreamspec::getStream(int64_t blockingtime)
 sgactor::sgactor(double freq, int64_t blockingtime)
 {
 	this->blockingtime = blockingtime;
-	this->time_sleep = std::chrono::nanoseconds((int64_t)(1000000.0L/freq));
+	this->time_sleep = std::chrono::nanoseconds((int64_t)(1000000000.0L/freq));
 	this->time_previous = std::chrono::steady_clock::now();
 }
 
