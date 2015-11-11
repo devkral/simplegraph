@@ -92,20 +92,16 @@ private:
 	std::condition_variable _pause_threads_finished;
 
 protected:
-	bool active=true;
-	bool pause_threads = false;
-	std::mutex pause_threads_lock;
+	void deleteStreamspecs(const std::set<std::string> specnames);
 public:
-	virtual ~sgmanager(){this->stop();}
-	bool interrupt_thread(sgactor *actor);
+	virtual ~sgmanager(){this->deleteActors();}
 	std::vector<sgstreamspec*> getStreamspecs(const std::vector<std::string> &streamnames);
 	std::vector<sgactor*> getActors(const std::vector<std::string> &actornames);
 	void updateStreamspec(const std::string &name, sgstreamspec* obj);
 	void addActor(const std::string &name, sgactor *actor, const std::vector<std::string> &streamnamesin, const std::vector<std::string> &streamnamesout);
-	//void removeActor(const std::string &name);
-	void pause();
-	void stop();
-	void start();
+	void deleteActors(const std::set<std::string> actornames=std::set<std::string>());
+	void pause(const std::set<std::string> actornames=std::set<std::string>());
+	void start(const std::set<std::string> actornames=std::set<std::string>());
 };
 
 class sgstream{
@@ -127,6 +123,7 @@ public:
 	std::shared_ptr<sgstream> getStream(int64_t blockingtime);
 	void updateStream(sgstream* streamob);
 	void stop();
+	bool stopping(){return this->is_stopping; }
 };
 
 
@@ -135,6 +132,9 @@ private:
 	std::chrono::steady_clock::time_point time_previous;
 	sgmanager* manager; // don't delete
 	std::timed_mutex time_lock;
+	bool is_pausing=false;
+	std::mutex pause_lock, stop_lock;
+	std::condition_variable_any pause_cond;
 	std::vector<sgstreamspec*> streamsin;
 	std::vector<std::shared_ptr<sgstream>> _tretgetStreams;
 	std::vector<std::future<std::shared_ptr<sgstream>>> _thandlesgetStreams;
@@ -161,6 +161,9 @@ public:
 	// blocking time: -1 wait infinitely for an update, 0 (default) take current element, >0 wait <nanoseconds> for update, return elsewise NULL
 	sgactor(double freq=1, int64_t blockingtime=0);
 	void stop();
+	void start();
+	void pause();
+	void join();
 	inline const std::string getName(){return this->name;}
 	inline sgmanager* getManager(){return this->manager;}
 	inline const std::set<std::string> getInstreams(){return this->owned_instreams;}

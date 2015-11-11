@@ -1,48 +1,29 @@
 
 #include "base.h"
 
+#include <iostream>
 namespace sgraph{
 
-void sgmanager::pause()
-{
-	this->pause_threads_lock.lock();
-	this->pause_threads = true;
-	this->pause_threads_lock.unlock();
-	//for (std::tuple<>)
-}
-void sgmanager::start()
-{
-	this->pause_threads_lock.lock();
-	this->pause_threads = false;
-	this->pause_threads_lock.unlock();
-	this->_pause_threads_finished.notify_all();
-	//for (std::tuple<>)
-}
 
-void sgmanager::stop()
+void sgmanager::start(const std::set<std::string> actornames)
 {
-	this->pause_threads_lock.lock();
-	this->pause_threads = false;
-	this->active=false;
-	this->pause_threads_lock.unlock();
-	this->_pause_threads_finished.notify_all();
-	
 	for (auto it: this->actordict)
 	{
-		it.second->stop();
+		if (actornames.size()==0 || actornames.count(it.first)!=0)
+			it.second->start();
 	}
 }
 
-bool sgmanager::interrupt_thread(sgactor *actor)
+void sgmanager::pause(const std::set<std::string> actornames)
 {
-	std::unique_lock<std::mutex> lck (this->pause_threads_lock);
-	
-	if (this->pause_threads)
+	for (auto it: this->actordict)
 	{
-		this->_pause_threads_finished.wait(lck);
+		if (actornames.size()==0 || actornames.count(it.first)!=0)
+			it.second->pause();
 	}
-	return this->active;
 }
+
+
 
 void sgmanager::updateStreamspec(const std::string &name, sgstreamspec* obj)
 {
@@ -106,8 +87,38 @@ void sgmanager::addActor(const std::string &name, sgactor *actor, const std::vec
 	this->actordict[name] = std::shared_ptr<sgactor>(actor);
 }
 
+void sgmanager::deleteStreamspecs(const std::set<std::string> specnames)
+{
+	for (auto it: this->streamdict)
+	{
+		if (specnames.size()==0 || specnames.count(it.first)!=0)
+		{
+			this->streamdict.erase(it.first);
+		}
+	}
+}
+
+void sgmanager::deleteActors(const std::set<std::string> actornames)
+{
+	for (auto it: this->actordict)
+	{
+		if (actornames.size()==0 || actornames.count(it.first)!=0)
+		{
+			it.second->stop();
+		}
+	}
+	for (auto it: this->actordict)
+	{
+		if (actornames.size()==0 || actornames.count(it.first)!=0)
+		{
+			this->deleteStreamspecs(it.second->getOutstreams());
+			this->actordict.erase(it.first);
+		}
+	}
+}
 
 
+/////////////////////////////////////////////////////////////
 
 void sgstreamspec::updateStream(sgstream* streamob)
 {
@@ -120,12 +131,14 @@ void sgstreamspec::updateStream(sgstream* streamob)
 	
 	if (this->is_stopping)
 	{
+		this->protaccess.unlock();
+		updating_finished.notify_all();
 		return;
 	}
 	this->stream = std::shared_ptr<sgstream> (streamob);
-	
-	updating_finished.notify_all();
 	this->protaccess.unlock();
+	updating_finished.notify_all();
+	
 }
 void sgstreamspec::stop()
 {
@@ -140,6 +153,7 @@ std::shared_ptr<sgstream> sgstreamspec::getStream(int64_t blockingtime)
 	if (this->is_stopping)
 	{
 		throw StopStreamspec();
+		//return std::shared_ptr<sgstream> (0);
 	}
 	this->protaccess.lock();
 	//std::unique_lock<std::recursive_mutex> lck(this->protaccess, std::adopt_lock);
@@ -150,18 +164,23 @@ std::shared_ptr<sgstream> sgstreamspec::getStream(int64_t blockingtime)
 	{
 		if (this->updating_finished.wait_for(this->protaccess, std::chrono::nanoseconds(blockingtime)) == std::cv_status::timeout)
 		{
+			this->protaccess.unlock();
 			return std::shared_ptr<sgstream> (0);
 		}
 	}
 	if (this->is_stopping)
 	{
+		//this->protaccess.unlock();
 		throw StopStreamspec();
+		//ret = std::shared_ptr<sgstream> (0);
 	}
-	ret = this->stream;
-	
-	this->reading_finished.notify_one();
+	else
+	{
+		ret = this->stream;
+	}
 	
 	this->protaccess.unlock();
+	this->reading_finished.notify_one();
 	return ret;
 }
 
@@ -175,42 +194,57 @@ sgactor::sgactor(double freq, int64_t blockingtime)
 	this->time_previous = std::chrono::steady_clock::now();
 }
 
+void sgactor::pause()
+{
+	this->pause_lock.lock();
+	this->is_pausing = true;
+	this->pause_lock.unlock();
+	//for (std::tuple<>)
+}
+void sgactor::start()
+{
+	this->pause_lock.lock();
+	this->is_pausing = false;
+	this->pause_lock.unlock();
+	this->pause_cond.notify_one(); // should be only one
+}
 void sgactor::stop()
 {
+	if(this->stop_lock.try_lock()==false)
+		return;
 	this->active=false;
 	this->time_lock.unlock();
+	this->pause_cond.notify_all();
 	for (sgstreamspec* elem: this->streamsout)
 	{
 		elem->stop();
 	}
-	this->leave();
 	if (this->intern_thread)
 	{
 		this->intern_thread->join();
 		delete this->intern_thread;
 	}
+	this->leave();
 }
+
 
 std::shared_ptr<sgstream> getStreamhelper(sgstreamspec *t, int64_t blockingtime)
 {
 	return t->getStream(blockingtime);
-
 }
-
 
 std::vector<std::shared_ptr<sgstream>> sgactor::getStreams()
 {
-	
 	this->_tretgetStreams.clear();
 	this->_thandlesgetStreams.clear();
-	//std::vector<auto> handles;
-	
 	for (sgstreamspec* elem: this->streamsin)
 	{
 		if (elem==0)
 		{
 			throw UninitializedStreamException();
 		}
+		
+		
 		_thandlesgetStreams.push_back(std::async(std::launch::async, getStreamhelper, elem, this->blockingtime));
 	}
 	
@@ -224,7 +258,14 @@ std::vector<std::shared_ptr<sgstream>> sgactor::getStreams()
 
 
 void sgactor::step(){
-	this->active=this->manager->interrupt_thread(this);
+	//this->active=this->manager->interrupt_thread(this);
+	
+	this->pause_lock.lock();
+	if (this->is_pausing)
+	{
+		this->pause_cond.wait(this->pause_lock);
+	}
+	this->pause_lock.unlock();
 	if (!this->active)
 	{
 		return;
@@ -251,8 +292,8 @@ void sgactor::init(const std::string &name, sgmanager *manager, const std::vecto
 {
 	this->name = name;
 	this->manager = manager;
-	this->owned_instreams.insert(streamnamesin.begin(),streamnamesin.end());
-	this->owned_outstreams.insert(streamnamesout.begin(),streamnamesout.end());
+	this->owned_instreams.insert(streamnamesin.begin(), streamnamesin.end());
+	this->owned_outstreams.insert(streamnamesout.begin(), streamnamesout.end());
 	this->streamsin = manager->getStreamspecs(streamnamesin);
 	this->_tretgetStreams = std::vector<std::shared_ptr<sgstream>> (this->streamsin.size());
 	this->_thandlesgetStreams = std::vector<std::future<std::shared_ptr<sgstream>>> (this->streamsin.size());
