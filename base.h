@@ -88,8 +88,6 @@ class sgmanager{
 private:
 	std::map<std::string, std::shared_ptr<sgactor>> actordict;
 	std::map<std::string, std::shared_ptr<sgstreamspec>> streamdict;
-	//mutex
-	std::condition_variable _pause_threads_finished;
 
 protected:
 	void deleteStreamspecs(const std::set<std::string> specnames);
@@ -100,6 +98,7 @@ public:
 	void updateStreamspec(const std::string &name, sgstreamspec* obj);
 	void addActor(const std::string &name, sgactor *actor, const std::vector<std::string> &streamnamesin, const std::vector<std::string> &streamnamesout);
 	void deleteActors(const std::set<std::string> actornames=std::set<std::string>());
+	void cleanupActors();
 	void pause(const std::set<std::string> actornames=std::set<std::string>());
 	void start(const std::set<std::string> actornames=std::set<std::string>());
 };

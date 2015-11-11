@@ -12,8 +12,10 @@ pluginmanager::pluginmanager()
 }
 pluginmanager::~pluginmanager()
 {
+	//this->manager->deleteActors();
 	delete this->manager;
 	this->manager = 0;
+	std::cout << "simplegraph cleaned up" << std::endl;
 }
 
 void pluginmanager::parsefile(const std::string &filepath)

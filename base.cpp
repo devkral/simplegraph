@@ -1,7 +1,7 @@
 
 #include "base.h"
 
-#include <iostream>
+//#include <iostream>
 namespace sgraph{
 
 
@@ -93,6 +93,7 @@ void sgmanager::deleteStreamspecs(const std::set<std::string> specnames)
 	{
 		if (specnames.size()==0 || specnames.count(it.first)!=0)
 		{
+			it.second->stop();
 			this->streamdict.erase(it.first);
 		}
 	}
@@ -107,14 +108,20 @@ void sgmanager::deleteActors(const std::set<std::string> actornames)
 			it.second->stop();
 		}
 	}
+	this->cleanupActors();
+}
+
+void sgmanager::cleanupActors()
+{
 	for (auto it: this->actordict)
 	{
-		if (actornames.size()==0 || actornames.count(it.first)!=0)
+		if (!it.second->active)
 		{
 			this->deleteStreamspecs(it.second->getOutstreams());
 			this->actordict.erase(it.first);
 		}
 	}
+
 }
 
 
@@ -215,10 +222,6 @@ void sgactor::stop()
 	this->active=false;
 	this->time_lock.unlock();
 	this->pause_cond.notify_all();
-	for (sgstreamspec* elem: this->streamsout)
-	{
-		elem->stop();
-	}
 	if (this->intern_thread)
 	{
 		this->intern_thread->join();
@@ -241,9 +244,9 @@ std::vector<std::shared_ptr<sgstream>> sgactor::getStreams()
 	{
 		if (elem==0)
 		{
-			throw UninitializedStreamException();
+			throw UninitializedStreamException(); // stops when using deleted stream
+			//throw StopStreamspec(); // stops when using deleted stream
 		}
-		
 		
 		_thandlesgetStreams.push_back(std::async(std::launch::async, getStreamhelper, elem, this->blockingtime));
 	}
@@ -280,6 +283,12 @@ void sgactor::step(){
 		this->run(this->getStreams());
 	}catch(StopStreamspec &e)
 	{
+		this->stop();
+		return;
+	}catch(UninitializedStreamException &e)
+	{
+		//std::cerr << "Stream not initialized, stop actor:" << std::endl;
+		//std::cerr << " " << e.what() << std::endl;
 		this->stop();
 		return;
 	}
