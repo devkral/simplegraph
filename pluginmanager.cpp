@@ -27,7 +27,7 @@ void pluginmanager::parsefile(const std::string &filepath)
 	std::string line;
 	bool foundline=false;
 	double freq=1.0;
-	int64_t blocking=-1;
+	int64_t blocking=0;
 	size_t limitpos;
 	std::string name, path;
 	std::vector<std::string> args, instreams, outstreams;
@@ -52,7 +52,7 @@ void pluginmanager::parsefile(const std::string &filepath)
 			tempret = string_split_single(line,line.find("module:")+7,limitpos);
 			name = std::get<0>(tempret);
 			path="";
-			freq=1.0;
+			freq=0;
 			blocking=-1;
 			args.clear();
 			instreams.clear();
@@ -61,6 +61,7 @@ void pluginmanager::parsefile(const std::string &filepath)
 		}else if(foundline==true && line.find("blocking=")<limitpos)
 		{
 			tempret = string_split_single(line,line.find("blocking=")+9,limitpos);
+			std::cout << "\"" << std::get<0>(tempret)  << "\"" << std::endl;
 			blocking = std::stol(std::get<0>(tempret));
 		}else if(foundline==true && line.find("frequency=")<limitpos)
 		{
@@ -116,7 +117,7 @@ int main(int argc, char *argv[])
 		try{
 			pluman.parsefile(argv[count]);
 		}
-		catch(std::exception e)
+		catch(std::exception &e)
 		{
 			std::cerr << "Caught exception:" << std::endl;
 			std::cerr << e.what() << std::endl;

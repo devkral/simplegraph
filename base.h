@@ -25,10 +25,13 @@ class sgstreamspec;
 class sgactor;
 class sgmanager;
 
-class NameCollisionException : std::exception{
+
+class StopStreamspec : public std::exception{};
+
+class NameCollisionException: public std::exception{
 	std::string reasonstr;
 public:
-	NameCollisionException(std::string reasonstr)
+	NameCollisionException(std::string reasonstr) : std::exception()
 	{
 		this->reasonstr=reasonstr;
 	}
@@ -39,9 +42,9 @@ public:
 
 };
 
-class UninitializedStreamException : std::exception{
+class UninitializedStreamException : public std::exception{
 public:
-	const char* what()
+	const char* what() 
 	{
 		return "Stream uninitialized";
 	}
@@ -49,11 +52,11 @@ public:
 
 
 
-class MissingStreamException : std::exception{
+class MissingStreamException : public std::exception{
 	std::string reasonstr;
 
 public:
-	MissingStreamException(std::string name)
+	MissingStreamException(std::string name) : std::exception()
 	{
 		this->reasonstr="Input Stream: \""+name+"\" does not exist";
 	}
@@ -64,11 +67,11 @@ public:
 	}
 };
 
-class MissingActorException : std::exception{
+class MissingActorException : public std::exception{
 	std::string reasonstr;
 
 public:
-	MissingActorException(std::string name)
+	MissingActorException(std::string name) : std::exception()
 	{
 		this->reasonstr="Actor: \""+name+"\" does not exist";
 	}
@@ -155,7 +158,8 @@ protected:
 
 public:
 	virtual ~sgactor(){};
-	sgactor(double freq=1, int64_t blockingtime=-1);
+	// blocking time: -1 wait infinitely for an update, 0 (default) take current element, >0 wait <nanoseconds> for update, return elsewise NULL
+	sgactor(double freq=1, int64_t blockingtime=0);
 	void stop();
 	inline const std::string getName(){return this->name;}
 	inline sgmanager* getManager(){return this->manager;}

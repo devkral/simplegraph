@@ -131,12 +131,16 @@ void sgstreamspec::stop()
 {
 	this->is_stopping=true;
 	this->protaccess.unlock();
+	updating_finished.notify_all();
 }
 
 std::shared_ptr<sgstream> sgstreamspec::getStream(int64_t blockingtime)
 {
 	std::shared_ptr<sgstream> ret;
-	
+	if (this->is_stopping)
+	{
+		throw StopStreamspec();
+	}
 	this->protaccess.lock();
 	//std::unique_lock<std::recursive_mutex> lck(this->protaccess, std::adopt_lock);
 	if (blockingtime==-1)
@@ -151,7 +155,7 @@ std::shared_ptr<sgstream> sgstreamspec::getStream(int64_t blockingtime)
 	}
 	if (this->is_stopping)
 	{
-		return std::shared_ptr<sgstream> (0);
+		throw StopStreamspec();
 	}
 	ret = this->stream;
 	
@@ -175,8 +179,11 @@ void sgactor::stop()
 {
 	this->active=false;
 	this->time_lock.unlock();
+	for (sgstreamspec* elem: this->streamsout)
+	{
+		elem->stop();
+	}
 	this->leave();
-
 	if (this->intern_thread)
 	{
 		this->intern_thread->join();
@@ -202,7 +209,7 @@ std::vector<std::shared_ptr<sgstream>> sgactor::getStreams()
 	{
 		if (elem==0)
 		{
-			throw(UninitializedStreamException());
+			throw UninitializedStreamException();
 		}
 		_thandlesgetStreams.push_back(std::async(std::launch::async, getStreamhelper, elem, this->blockingtime));
 	}
@@ -228,9 +235,14 @@ void sgactor::step(){
 	{
 		return;
 	}
-
-	this->run(this->getStreams());
-
+	try{
+		this->run(this->getStreams());
+	}catch(StopStreamspec &e)
+	{
+		this->stop();
+		return;
+	}
+	
 	this->time_previous = std::chrono::steady_clock::now();
 	//this->transform(sgactor, std::forward(sgactor));
 };

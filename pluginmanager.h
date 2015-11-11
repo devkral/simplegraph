@@ -64,8 +64,8 @@ const std::tuple<std::string, size_t> string_split_single(const std::string &inp
 		std::cerr << "Error: floating \\\" : \"" << inp << "\"" << std::endl;
 		return std::tuple<std::string, size_t>("", std::string::npos);
 	}
-	first += 1; // set to first character
-	last=inp.find_first_of('"', first);
+	//first += 1; // set to first character
+	last=inp.find_first_of('"', first+1);
 	while (last<limitpos && inp.at(last-1)=='\\')
 	{
 		last=inp.find_first_of('"', last+1);
@@ -79,7 +79,7 @@ const std::tuple<std::string, size_t> string_split_single(const std::string &inp
 	{
 		return std::tuple<std::string, size_t>("", last+1);
 	}
-	return std::tuple<std::string, size_t>(inp.substr(first, (last)-first), last+1);
+	return std::tuple<std::string, size_t>(inp.substr(first+1, (last-1)-first), last+1);
 }
 
 const std::vector<std::string> string_split_multiple(const std::string &inp, size_t startpos=0, size_t limitpos=std::string::npos)
