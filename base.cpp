@@ -197,7 +197,14 @@ sgactor::sgactor(double freq, int64_t blockingtime)
 {
 	this->blockingtime = blockingtime;
 	this->time_lock.lock();
-	this->time_sleep = std::chrono::nanoseconds((int64_t)(1000000000.0L/freq));
+	if (freq>0)
+	{
+		this->time_sleep = std::chrono::nanoseconds((int64_t)(1000000000.0L/freq));
+	}
+	else
+	{
+		this->time_sleep = std::chrono::nanoseconds((int64_t)(-1.0L*freq));
+	}
 	this->time_previous = std::chrono::steady_clock::now();
 }
 
