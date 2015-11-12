@@ -20,6 +20,7 @@
 
 namespace sgraph{
 
+/**
 #if _WIN32|_WIN64
 const char _filesysdelimiter = '\\';
 #else
@@ -34,6 +35,7 @@ const char* _libraryending = ".dylib";
 #else
 const char* _libraryending = ".so";
 #endif
+*/
 
 const size_t find_comment(const std::string &inp, size_t startpos=0, size_t limitpos=std::string::npos)
 {

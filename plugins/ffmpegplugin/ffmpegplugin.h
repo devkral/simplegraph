@@ -2,6 +2,7 @@
 #ifndef FFMPEGPLUGIN1_H
 #define FFMPEGPLUGIN1_H
 
+#include "ffmpegvideosource.h"
 #include "base.h"
 
 

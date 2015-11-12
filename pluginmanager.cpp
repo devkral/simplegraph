@@ -50,11 +50,12 @@ void pluginmanager::parsefile(const std::string &filepath)
 			foundline=true;
 		} else if(foundline==true && line.find("module:")<limitpos)
 		{
-			if (path=="")
+			if (path!="")
 			{
-				path = (std::string)"plugins"+_filesysdelimiter+name+_filesysdelimiter+"lib"+name+_libraryending;
+				//path = (std::string)"plugins"+_filesysdelimiter+name+_filesysdelimiter+"lib"+name+_libraryending;
+			
+				this->addPlugin(path, path,freq,blocking, args, instreams, outstreams);
 			}
-			this->addPlugin(path, path,freq,blocking, args, instreams, outstreams);
 			tempret = string_split_single(line,line.find("module:")+7,limitpos);
 			name = std::get<0>(tempret);
 			path="";
@@ -77,10 +78,6 @@ void pluginmanager::parsefile(const std::string &filepath)
 		{
 			tempret = string_split_single(line,line.find("path=")+5,limitpos);
 			path = std::get<0>(tempret);
-			if (path=="")
-			{
-				path=(std::string)"plugins"+_filesysdelimiter+name+_filesysdelimiter+name;
-			}
 		}else if(foundline==true && line.find("args=")<limitpos)
 		{
 			args = string_split_multiple(line, line.find("args=")+5,limitpos);
