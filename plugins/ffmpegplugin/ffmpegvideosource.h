@@ -28,7 +28,7 @@ public:
 
 class spec_ffmpegi : public spec_image{
 public:
-	spec_ffmpegi(AVInputFormat *input_device_format);
+	spec_ffmpegi(AVCodecContext *cod_context, uint8_t channels);
 
 };
 
@@ -36,11 +36,15 @@ class ffmpegvideosource : public sgactor{
 protected:
 	std::string devicename;
 	AVInputFormat *input_device_format=0;
-	AVFormatContext context;
+	AVCodec *codec=0;
+	AVFormatContext *form_context=0;
+	AVCodecContext *cod_context=0;
 	AVPacket packet;
+	AVFrame *frame=0;
 	int got_frame;
 public:
-	ffmpegvideosource(double freq, int64_t blocking, std::string device="");
+	ffmpegvideosource(double freq, int64_t blocking, std::string format, std::string device="");
+	~ffmpegvideosource();
 	void enter(const std::vector<sgstreamspec*> &in,const std::vector<std::string> &out);
 	void run(const std::vector<std::shared_ptr<sgstream>> in);
 	void leave();

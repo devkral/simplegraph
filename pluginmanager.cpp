@@ -2,6 +2,7 @@
 #include "pluginmanager.h"
 
 #include <fstream>
+#include "basespecs.h"
 
 namespace sgraph{
 
@@ -27,9 +28,11 @@ void pluginmanager::parsefile(const std::string &filepath)
 	std::ifstream stream = std::ifstream();
 	stream.open(filepath);
 	std::string line;
-	bool foundline=false;
+	uint8_t foundline=0;
+	uint8_t loglevel=0;
 	double freq=1.0;
 	int64_t blocking=0;
+	bool debug_initialized=false;
 	size_t limitpos;
 	std::string name, path;
 	std::vector<std::string> args, instreams, outstreams;
@@ -43,61 +46,95 @@ void pluginmanager::parsefile(const std::string &filepath)
 	{
 		std::getline(stream, line);
 		limitpos = find_comment(line);
-		if (foundline==false && line.find("module:")<limitpos)
+		if (foundline==0 && line.find("module:")<limitpos)
 		{
 			tempret = string_split_single(line,line.find("module:")+7,limitpos);
 			name = std::get<0>(tempret);
-			foundline=true;
-		} else if(foundline==true && line.find("module:")<limitpos)
+			foundline=1;
+		}else if (foundline==0 && line.find("debug:")<limitpos && debug_initialized==false)
+		{
+			//name = "debug";
+			foundline=2;
+		}else if(foundline==1 && line.find("debug:")<limitpos)
 		{
 			if (path!="")
 			{
 				//path = (std::string)"plugins"+_filesysdelimiter+name+_filesysdelimiter+"lib"+name+_libraryending;
 			
-				this->addPlugin(path, path,freq,blocking, args, instreams, outstreams);
+				this->addPlugin(name, path,freq,blocking, args, instreams, outstreams);
 			}
-			tempret = string_split_single(line,line.find("module:")+7,limitpos);
-			name = std::get<0>(tempret);
 			path="";
-			freq=0;
+			freq=1.0;
 			blocking=-1;
 			args.clear();
 			instreams.clear();
 			outstreams.clear();
-			foundline=true;
-		}else if(foundline==true && line.find("blocking=")<limitpos)
+			foundline=2;
+		
+		}
+		else if(foundline>=1 && line.find("module:")<limitpos)
+		{
+			if (path!="")
+			{
+				//path = (std::string)"plugins"+_filesysdelimiter+name+_filesysdelimiter+"lib"+name+_libraryending;
+			
+				this->addPlugin(name, path,freq,blocking, args, instreams, outstreams);
+			}else if(foundline==2)
+			{
+				sgactor *dgactor=new debugactor(loglevel);
+				this->manager->addActor("debug", dgactor,instreams, outstreams);
+			}
+			tempret = string_split_single(line,line.find("module:")+7,limitpos);
+			name = std::get<0>(tempret);
+			path="";
+			freq=1.0;
+			blocking=-1;
+			args.clear();
+			instreams.clear();
+			outstreams.clear();
+			foundline=1;
+		}else if(foundline==1 && line.find("blocking=")<limitpos)
 		{
 			tempret = string_split_single(line,line.find("blocking=")+9,limitpos);
 			std::cout << "\"" << std::get<0>(tempret)  << "\"" << std::endl;
 			blocking = std::stol(std::get<0>(tempret));
-		}else if(foundline==true && line.find("frequency=")<limitpos)
+		}else if(foundline==1 && line.find("frequency=")<limitpos)
 		{
 			tempret = string_split_single(line,line.find("frequency=")+10,limitpos);
 			freq = std::stod(std::get<0>(tempret));
-		}else if(foundline==true && line.find("path=")<limitpos)
+		}else if(foundline==1 && line.find("path=")<limitpos)
 		{
 			tempret = string_split_single(line,line.find("path=")+5,limitpos);
 			path = std::get<0>(tempret);
-		}else if(foundline==true && line.find("args=")<limitpos)
+		}else if(foundline==1 && line.find("args=")<limitpos)
 		{
 			args = string_split_multiple(line, line.find("args=")+5,limitpos);
-		}else if(foundline==true && line.find("instreams=")<limitpos)
+		}else if(foundline>=1 && line.find("instreams=")<limitpos)
 		{
 			instreams = string_split_multiple(line, line.find("instreams=")+10,limitpos);
-		}else if(foundline==true && line.find("outstreams=")<limitpos)
+		}else if(foundline==1 && line.find("outstreams=")<limitpos)
 		{
 			outstreams = string_split_multiple(line, line.find("outstreams=")+11,limitpos);
+		}else if(foundline==2 && line.find("loglevel=")<limitpos)
+		{
+			tempret = string_split_single(line,line.find("loglevel=")+9,limitpos);
+			loglevel = std::stoi(std::get<0>(tempret));
 		}
+
 		
 		
 	}
 	stream.close();
 	// add last module, which isn't terminated by module:
-	if (foundline==true)
+	if (foundline==1)
 	{
 		this->addPlugin(name, path,freq,blocking, args, instreams, outstreams);
 	}
-
+	if (foundline==2 && debug_initialized==false)
+	{
+		sgactor *dgactor=new debugactor(loglevel);
+		this->manager->addActor("debug", dgactor,instreams, outstreams);
+	}
 }
 bool pluginmanager::addPlugin(const std::string &name, const std::string &path,  const double &freq, const int64_t &blocking, const std::vector<std::string> &args, const std::vector<std::string> &instreams, const std::vector<std::string> &outstreams)
 {

@@ -15,13 +15,18 @@ namespace sgraph{
 
 
 
-spec_ffmpegi::spec_ffmpegi(AVInputFormat *input_format) : spec_image()
+spec_ffmpegi::spec_ffmpegi(AVCodecContext *cod_context, uint8_t channels) : spec_image()
 {
-	this->capabilities.insert("ffmpeg");
+	this->capabilities.insert("spec_ffmpegi");
+	this->width = cod_context->width;
+	this->height = cod_context->height;
+	this->channels=channels;
+	//RGBA
+	//uint64_t width, uint64_t height, uint32_t channels
 }
 
 
-ffmpegvideosource::ffmpegvideosource(double freq, int64_t blocking, std::string device): sgactor(freq, blocking)
+ffmpegvideosource::ffmpegvideosource(double freq, int64_t blocking, std::string format, std::string device): sgactor(freq, blocking)
 {
 	this->devicename=device;
 }
@@ -43,8 +48,17 @@ void ffmpegvideosource::enter(const std::vector<sgstreamspec*> &in,const std::ve
 		return;
 	
 	av_init_packet(&this->packet);
-	this->input_device_format->read_header(&this->context);
-	this->getManager()->updateStreamspec(out[0], new spec_ffmpegi(this->input_device_format));
+	this->frame = av_frame_alloc();
+	this->input_device_format->read_header(this->form_context);
+	int video_stream_index = av_find_best_stream(this->form_context, AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0);
+	this->cod_context = this->form_context->streams[video_stream_index]->codec;
+	//av_opt_set_int(this->codec, "refcounted_frames", 1, 0);
+	/* init the video decoder */
+	if (avcodec_open2(this->cod_context, NULL, NULL) < 0) {
+		return;
+	}
+	
+	this->getManager()->updateStreamspec(out[0], new spec_ffmpegi(this->cod_context, 4));
 	
 		
 		
@@ -54,13 +68,16 @@ void ffmpegvideosource::run(const std::vector<std::shared_ptr<sgstream>> in)
 {
 	//this->packet.data=0;
 	//this->packet.size=0;
-	AVFrame frame;
-	frame = *av_frame_alloc();
-	this->input_device_format->read_packet(&this->context, &this->packet);
+
+	this->input_device_format->read_packet(this->form_context, &this->packet);
 	//av_read_frame(&this->contex, &packet)
-	avcodec_decode_video2(&this->context, frame, &this->got_frame, &this->packet);
-	int size = av_image_get_buffer_size(frame.pix_fmt, frame.width, frame.height, frame.align);
-	this->streamsout[0]->updateStream(new stream_data(frame.data, size));
+	avcodec_decode_video2(this->cod_context, this->frame, &this->got_frame, &this->packet);
+	if (this->got_frame==0)
+		return;
+	int size = av_image_get_buffer_size(AV_PIX_FMT_RGBA64, this->frame->width, this->frame->height, 4);
+	uint8_t *buffer=(uint8_t*)calloc(sizeof(uint8_t),size);
+	 av_image_copy_to_buffer(buffer,size, this->frame->data, this->frame->linesize, AV_PIX_FMT_RGBA64, this->frame->width, this->frame->height, 4);
+	this->streamsout[0]->updateStream(new stream_data(buffer, size));
 	//this->packet.data=0;
 	//this->packet.size=0;
 	
@@ -68,12 +85,21 @@ void ffmpegvideosource::run(const std::vector<std::shared_ptr<sgstream>> in)
 void ffmpegvideosource::leave()
 {
 	
+	
+}
+
+ffmpegvideosource::~ffmpegvideosource()
+{
 	av_free_packet(&this->packet);
+	av_frame_free(&this->frame);
 	if (this->input_device_format)
-	{
-		delete this->input_device_format;
-		this->input_device_format=0;
-	}
+		av_freep (this->input_device_format);
+	if (this->codec)
+		av_freep (this->codec);
+	if (this->cod_context)
+		av_freep (this->cod_context);
+	if (this->form_context)
+		av_freep (this->form_context);
 }
 
 
