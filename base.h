@@ -116,13 +116,13 @@ private:
 	std::condition_variable_any updating_finished, reading_finished;
 	std::shared_ptr<sgstream> stream;
 	//sgactor *owner;
-
 public:
+	std::set<std::string> capabilities;
 	virtual ~sgstreamspec(){};
 	std::shared_ptr<sgstream> getStream(int64_t blockingtime);
 	void updateStream(sgstream* streamob);
 	void stop();
-	bool stopping(){return this->is_stopping; }
+	bool stopping(){return this->is_stopping;}
 };
 
 
@@ -158,7 +158,7 @@ protected:
 public:
 	virtual ~sgactor(){};
 	// blocking time: -1 wait infinitely for an update, 0 (default) take current element, >0 wait <nanoseconds> for update, return elsewise NULL
-	sgactor(double freq=1, int64_t blockingtime=0);
+	sgactor(double freq, int64_t blockingtime);
 	void stop();
 	void start();
 	void pause();

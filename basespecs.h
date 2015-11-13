@@ -4,16 +4,20 @@
 #define SGBASESPECS_H
 #include "base.h"
 
+//#include <cstdlib>
+
 namespace sgraph{
 
-class stream_image_raw : public sgstream{
+class stream_data : public sgstream{
 public:
 	uint8_t *ptr;
-	stream_image_raw(uint8_t *ptr) : sgstream()
+	size_t size;
+	stream_data(uint8_t *ptr, size_t size) : sgstream()
 	{
 		this->ptr=ptr;
+		this->size=size;
 	}
-	~stream_image_raw()
+	~stream_data()
 	{
 		free(ptr);
 	}
@@ -22,15 +26,32 @@ public:
 class spec_image : public sgstreamspec
 {
 public:
-	spec_image(uint64_t x, uint64_t y, uint64_t w, uint64_t h) : sgstreamspec()
+	spec_image() : sgstreamspec()
 	{
-		this->x = x;
-		this->y = y;
-		this->w = w;
-		this->h = h;
+		this->capabilities.insert("spec_image");
 	}
-	uint64_t x,y,w,h;
-	uint8_t hint=0;
+	uint64_t witdh,height,channels;
+};
+
+
+class stream_pos : public sgstream{
+public:
+	int64_t x, y;
+	stream_pos(int64_t x, int64_t y) : sgstream()
+	{
+		this->x=x;
+		this->y=y;
+	}
+};
+
+class spec_pos : public sgstreamspec
+{
+public:
+	spec_pos() : sgstreamspec()
+	{
+		this->capabilities.insert("spec_pos");
+	}
+
 };
 
 
@@ -46,7 +67,9 @@ public:
 class spec_text : public sgstreamspec
 {
 public:
-	spec_text() : sgstreamspec(){};
+	spec_text() : sgstreamspec(){
+		this->capabilities.insert("spec_text");
+	};
 
 };
 

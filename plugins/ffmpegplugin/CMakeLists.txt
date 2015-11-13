@@ -5,4 +5,4 @@ include_directories(
 	../../
 )
 add_library(ffmpegplugin SHARED ffmpegplugin.cpp)
-target_link_libraries (ffmpegplugin sgbase)
+target_link_libraries (ffmpegplugin sgbase avcodec avformat avutil)
