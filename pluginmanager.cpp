@@ -69,7 +69,10 @@ void pluginmanager::parsefile(const std::string &filepath)
 			args.clear();
 			instreams.clear();
 			outstreams.clear();
-			foundline=2;
+			if (debug_initialized==false)
+			{
+				foundline=2;
+			}
 		
 		}
 		else if(foundline>=1 && line.find("module:")<limitpos)
@@ -79,10 +82,11 @@ void pluginmanager::parsefile(const std::string &filepath)
 				//path = (std::string)"plugins"+_filesysdelimiter+name+_filesysdelimiter+"lib"+name+_libraryending;
 			
 				this->addPlugin(name, path,freq,blocking, args, instreams, outstreams);
-			}else if(foundline==2)
+			}else if(foundline==2 && debug_initialized==false)
 			{
 				sgactor *dgactor=new debugactor(loglevel);
 				this->manager->addActor("debug", dgactor,instreams, outstreams);
+				debug_initialized=true;
 			}
 			tempret = string_split_single(line,line.find("module:")+7,limitpos);
 			name = std::get<0>(tempret);
@@ -96,7 +100,6 @@ void pluginmanager::parsefile(const std::string &filepath)
 		}else if(foundline==1 && line.find("blocking=")<limitpos)
 		{
 			tempret = string_split_single(line,line.find("blocking=")+9,limitpos);
-			std::cout << "\"" << std::get<0>(tempret)  << "\"" << std::endl;
 			blocking = std::stol(std::get<0>(tempret));
 		}else if(foundline==1 && line.find("frequency=")<limitpos)
 		{
@@ -134,6 +137,7 @@ void pluginmanager::parsefile(const std::string &filepath)
 	{
 		sgactor *dgactor=new debugactor(loglevel);
 		this->manager->addActor("debug", dgactor,instreams, outstreams);
+		debug_initialized=true;
 	}
 }
 bool pluginmanager::addPlugin(const std::string &name, const std::string &path,  const double &freq, const int64_t &blocking, const std::vector<std::string> &args, const std::vector<std::string> &instreams, const std::vector<std::string> &outstreams)

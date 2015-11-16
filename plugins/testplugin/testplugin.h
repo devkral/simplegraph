@@ -6,6 +6,8 @@
 #define TESTPLUGIN1_H
 
 #include "base.h"
+#include "basespecs.h"
+
 
 #include <iostream>
 
