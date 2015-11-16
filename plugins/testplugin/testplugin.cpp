@@ -51,7 +51,7 @@ void testtransformer::run(std::vector<std::shared_ptr<sgraph::sgstream>> in)
 {
 	streamsout[0]->updateStream(new teststream(((teststream*)in[0].get())->testout));
 	if (streamsout.size()==2)
-		streamsout[1]->updateStream(new sgraph::stream_log("test",0));
+		streamsout[1]->updateStream(new sgraph::stream_log("test",1));
 
 }
 void testtransformer::leave()
