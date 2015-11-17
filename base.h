@@ -149,7 +149,7 @@ protected:
 	}
 	int64_t blockingtime;
 	std::chrono::nanoseconds time_sleep;
-	std::vector<std::shared_ptr<sgstream>> getStreams();
+	std::vector<std::shared_ptr<sgstream>> getStreams(bool do_block=false);
 	std::string name;
 	
 	std::set<std::string> owned_instreams;

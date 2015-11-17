@@ -39,7 +39,7 @@ std::vector<sgraph::sgstreamspec*> sgmanager::getStreamspecs(const std::vector<s
 		{
 			throw(MissingStreamException(elem));
 		}
-		ret.push_back(this->streamdict.at(elem).get());
+		ret.emplace_back(this->streamdict.at(elem).get());
 	}
 	return ret;
 }
@@ -53,7 +53,7 @@ std::vector<sgactor*> sgmanager::getActors(const std::vector<std::string> &actor
 		{
 			throw(MissingActorException(elem));
 		}
-		ret.push_back(this->actordict.at(elem).get());
+		ret.emplace_back(this->actordict.at(elem).get());
 	}
 	return ret;
 
@@ -243,7 +243,7 @@ std::shared_ptr<sgstream> getStreamhelper(sgstreamspec *t, int64_t blockingtime)
 	return t->getStream(blockingtime);
 }
 
-std::vector<std::shared_ptr<sgstream>> sgactor::getStreams()
+std::vector<std::shared_ptr<sgstream>> sgactor::getStreams(bool do_block)
 {
 	this->_tretgetStreams.clear();
 	this->_thandlesgetStreams.clear();
@@ -254,14 +254,19 @@ std::vector<std::shared_ptr<sgstream>> sgactor::getStreams()
 			throw UninitializedStreamException(); // stops when using deleted stream
 			//throw StopStreamspec(); // stops when using deleted stream
 		}
-		
-		_thandlesgetStreams.push_back(std::async(std::launch::async, getStreamhelper, elem, this->blockingtime));
+		if (do_block==true)
+		{
+			_thandlesgetStreams.emplace_back(std::async(std::launch::async, getStreamhelper, elem, -1));
+		}else
+		{
+			_thandlesgetStreams.emplace_back(std::async(std::launch::async, getStreamhelper, elem, this->blockingtime));
+		}
 	}
 	
 	for (std::future<std::shared_ptr<sgstream>> &elem: _thandlesgetStreams)
 	{
 		elem.wait();
-		_tretgetStreams.push_back(elem.get());
+		_tretgetStreams.emplace_back(elem.get());
 	}
 	return _tretgetStreams;
 }
