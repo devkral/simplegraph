@@ -6,7 +6,6 @@ void testprovider::enter(const std::vector<sgraph::sgstreamspec*> &in, const std
 {
 	if (in.size()!=0 || out.size()!=1)
 		throw(sgraph::MissingStreamException("?"));
-	this->getStreams(true); // removes first element
 	for (std::string elem : out)
 	{
 		std::cout << "Provider inits:" << elem << std::endl;
@@ -33,7 +32,6 @@ void testtransformer::enter(const std::vector<sgraph::sgstreamspec*> &in, const 
 	std::cout << "transformer consumes:" << *this->getInstreams().begin() << std::endl;
 	if (in.size()!=1 || (out.size()!=2 && out.size()!=1 ))
 		throw(sgraph::MissingStreamException("?"));
-	this->getStreams(true); // removes first element
 	std::cout << "transformer inits:" << out[0] << std::endl;
 	this->getManager()->updateStreamspec(out[0], new teststreamspec());
 
@@ -50,9 +48,13 @@ void testtransformer::enter(const std::vector<sgraph::sgstreamspec*> &in, const 
 
 void testtransformer::run(std::vector<std::shared_ptr<sgraph::sgstream>> in)
 {
-	streamsout[0]->updateStream(new teststream(((teststream*)in[0].get())->testout));
-	if (streamsout.size()==2)
-		streamsout[1]->updateStream(new sgraph::stream_log("test",1));
+	teststream* temp = (teststream*)in[0].get();
+	if (temp!=0)
+	{
+		streamsout[0]->updateStream(new teststream(temp->testout));
+		if (streamsout.size()==2)
+			streamsout[1]->updateStream(new sgraph::stream_log("test",1));
+	}
 
 }
 void testtransformer::leave()
@@ -67,7 +69,6 @@ void testconsumer::enter(const std::vector<sgraph::sgstreamspec*> &in, const std
 	std::cout << "consumer consumes:" << *this->getInstreams().begin() << std::endl;
 	if (in.size()!=1 || out.size()!=0)
 		throw(sgraph::MissingStreamException("?"));
-	this->getStreams(true); // removes first element
 	
 	std::cout << "Name: " << this->getName() << std::endl;
 	this->intern_thread=new std::thread(sgraph::sgactor::thread_wrapper, this);

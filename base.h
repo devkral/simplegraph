@@ -113,7 +113,7 @@ class sgstreamspec{
 private:
 	std::recursive_mutex protaccess;
 	bool is_updating=false, is_stopping=false;
-	std::condition_variable_any updating_finished, reading_finished;
+	std::condition_variable_any updating_finished;
 	std::shared_ptr<sgstream> stream;
 	//sgactor *owner;
 public:
@@ -131,7 +131,7 @@ private:
 	std::chrono::steady_clock::time_point time_previous;
 	sgmanager* manager; // don't delete
 	std::timed_mutex time_lock;
-	bool is_pausing=false;
+	bool is_pausing=true; // start paused
 	std::mutex pause_lock, stop_lock;
 	std::condition_variable_any pause_cond;
 	std::vector<sgstreamspec*> streamsin;

@@ -10,7 +10,9 @@ void sgmanager::start(const std::set<std::string> actornames)
 	for (auto it: this->actordict)
 	{
 		if (actornames.size()==0 || actornames.count(it.first)!=0)
+		{
 			it.second->start();
+		}
 	}
 }
 
@@ -19,7 +21,9 @@ void sgmanager::pause(const std::set<std::string> actornames)
 	for (auto it: this->actordict)
 	{
 		if (actornames.size()==0 || actornames.count(it.first)!=0)
+		{
 			it.second->pause();
+		}
 	}
 }
 
@@ -33,6 +37,7 @@ void sgmanager::updateStreamspec(const std::string &name, sgstreamspec* obj)
 std::vector<sgraph::sgstreamspec*> sgmanager::getStreamspecs(const std::vector<std::string> &streamnames)
 {
 	std::vector<sgstreamspec*> ret;
+	ret.reserve(streamnames.size());
 	for (std::string elem: streamnames)
 	{
 		if (this->streamdict.count(elem)==0)
@@ -47,6 +52,7 @@ std::vector<sgraph::sgstreamspec*> sgmanager::getStreamspecs(const std::vector<s
 std::vector<sgactor*> sgmanager::getActors(const std::vector<std::string> &actornames)
 {
 	std::vector<sgactor*> ret;
+	ret.reserve(actornames.size());
 	for (std::string elem: actornames)
 	{
 		if (this->actordict.count(elem)==0)
@@ -129,13 +135,8 @@ void sgmanager::cleanupActors()
 
 void sgstreamspec::updateStream(sgstream* streamob)
 {
-	this->protaccess.lock();
-	/**if (interests>0)
-	{
-		std::unique_lock<std::recursive_mutex> lck(this->protaccess, std::adopt_lock);
-		this->reading_finished.wait(lck);
-	}*/
 	
+	this->protaccess.lock();
 	if (this->is_stopping)
 	{
 		this->protaccess.unlock();
@@ -187,7 +188,6 @@ std::shared_ptr<sgstream> sgstreamspec::getStream(int64_t blockingtime)
 	}
 	
 	this->protaccess.unlock();
-	this->reading_finished.notify_one();
 	return ret;
 }
 
@@ -235,6 +235,10 @@ void sgactor::stop()
 		delete this->intern_thread;
 	}
 	this->leave();
+	for (sgstreamspec* elem: this->streamsout)
+	{
+		elem->stop();
+	}
 }
 
 

@@ -19,8 +19,8 @@ int main()
 	ac3streamsin.push_back("stream2");
 	
 	man.addActor("provider",new testprovider(1,1), ac1streamsin, ac1streamsout);
-	man.addActor("transformer",new testtransformer(1,1), ac2streamsin, ac2streamsout);
-	man.addActor("consumer",new testconsumer(1,1), ac3streamsin, ac3streamsout);
+	man.addActor("transformer",new testtransformer(1,-1), ac2streamsin, ac2streamsout);
+	man.addActor("consumer",new testconsumer(2,1000000000), ac3streamsin, ac3streamsout);
 	
 	std::vector<std::string> actorsretrieve;
 	actorsretrieve.push_back("provider");
@@ -31,8 +31,9 @@ int main()
 		std::cout << "Actorname:" << actor->getName() << std::endl;
 	
 	}
-	
+	man.start();
 	std::cout << "simplegraph test started, press any key to exit" << std::endl;
 	getchar();
+	return 0;
 }
 

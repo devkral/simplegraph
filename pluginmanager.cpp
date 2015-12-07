@@ -151,7 +151,17 @@ bool pluginmanager::addPlugin(const std::string &name, const std::string &path, 
 	this->manager->addActor(name, actor, instreams, outstreams);
 	return true;
 }
+
+void pluginmanager::start()
+{
+	this->manager->start();
 }
+void pluginmanager::pause()
+{
+	this->manager->pause();
+}
+
+} // end sgraph
 
 int main(int argc, char *argv[])
 {
@@ -167,6 +177,16 @@ int main(int argc, char *argv[])
 			std::cerr << e.what() << std::endl;
 			return 1;
 		}
+	}
+	std::cout << "starting simplegraph" << std::endl;
+	try{
+		pluman.start();
+	}
+	catch(std::exception &e)
+	{
+		std::cerr << "Caught exception:" << std::endl;
+		std::cerr << e.what() << std::endl;
+		return 1;
 	}
 	std::cout << "simplegraph started, press any key to exit" << std::endl;
 	getchar();

@@ -159,8 +159,8 @@ public:
 	pluginmanager();
 	void parsefile(const std::string &filepath);
 	bool addPlugin(const std::string &name, const std::string &path, const double &freq, const int64_t &blocking, const std::vector<std::string> &args, const std::vector<std::string> &instreams, const std::vector<std::string> &outstreams);
-
-
+	void start();
+	void pause();
 
 };
 
