@@ -3,6 +3,7 @@
 #include <thread>
 #include <iostream>
 #include <cstring>
+#include <exception>
 
 namespace sgraph{
 
@@ -30,27 +31,30 @@ spec_ffmpegi::spec_ffmpegi(AVCodecContext *cod_context, uint8_t channels) : spec
 
 ffmpegvideosource::ffmpegvideosource(double freq, int64_t blocking, std::string format, std::string device): sgactor(freq, blocking)
 {
+	this->formatname=format;
 	this->devicename=device;
-	//av_register_all();
+	avdevice_register_all();
+	av_register_all();
 }
 
 void ffmpegvideosource::enter(const std::vector<sgstreamspec*> &in,const std::vector<std::string> &out)
 {
 	if (in.size()!=0 || out.size()!=1)
-		throw(sgraph::MissingStreamException("?"));
+		throw(sgraph::sgraphStreamException("invalid amount of in- or outstreams"));
 	
-	this->input_device_format=0;
+	this->input_device_format=NULL;
 	av_input_video_device_next(this->input_device_format);
-	while (this->input_device_format!=0)
+	while (this->input_device_format!=NULL)
 	{
-		std::cout << "meep " << this->input_device_format->name << std::endl;
+		std::cerr << "meeeeep" << this->input_device_format->name << std::endl;
 		if( this->devicename!="" || strcmp(this->devicename.c_str(), this->input_device_format->name)==0)
 			break;
 		av_input_video_device_next(this->input_device_format);
 	}
-	if (this->input_device_format==0)
-		return;
-	
+	if (this->input_device_format==NULL)
+	{
+		throw(sgraphException("Error: finding video device failed"));
+	}
 	av_init_packet(&this->packet);
 	this->frame = av_frame_alloc();
 	this->input_device_format->read_header(this->form_context);

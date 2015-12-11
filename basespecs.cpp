@@ -14,15 +14,15 @@ void debugactor::enter(const std::vector<sgstreamspec*> &in,const std::vector<st
 {
 	if (out.size()>0)
 	{
-		throw(std::exception());
+		throw(sgraphException("outstreams are not allowed"));
 	}
-	for (sgstreamspec *elem: in)
+	/**for (sgstreamspec *elem: in)
 	{
 		if (elem==0)
 		{
-			throw(UninitializedStreamException());
+			throw(sgraphStreamException("stream"));
 		}
-	}
+	}*/ // getStreams should protect already
 	this->intern_thread=new std::thread(sgraph::sgactor::thread_wrapper, this);
 	
 

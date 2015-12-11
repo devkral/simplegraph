@@ -1,7 +1,7 @@
 
 #include "base.h"
 
-//#include <iostream>
+#include <iostream>
 namespace sgraph{
 
 
@@ -42,7 +42,7 @@ std::vector<sgraph::sgstreamspec*> sgmanager::getStreamspecs(const std::vector<s
 	{
 		if (this->streamdict.count(elem)==0)
 		{
-			throw(MissingStreamException(elem));
+			throw(sgraphException("Stream: \""+elem+"\" is missing"));
 		}
 		ret.emplace_back(this->streamdict.at(elem).get());
 	}
@@ -57,7 +57,7 @@ std::vector<sgactor*> sgmanager::getActors(const std::vector<std::string> &actor
 	{
 		if (this->actordict.count(elem)==0)
 		{
-			throw(MissingActorException(elem));
+			throw(sgraphException("Actor: \""+elem+"\" is missing"));
 		}
 		ret.emplace_back(this->actordict.at(elem).get());
 	}
@@ -71,7 +71,7 @@ void sgmanager::addActor(const std::string &name, sgactor *actor, const std::vec
 	{
 		if (this->streamdict.count(elem)==0)
 		{
-			throw(MissingStreamException(elem));
+			throw(sgraphException("Inputstream: \""+elem+"\" is uninitialized"));
 		}
 	}
 	
@@ -79,14 +79,15 @@ void sgmanager::addActor(const std::string &name, sgactor *actor, const std::vec
 	{
 		if (this->streamdict.count(elem)==1)
 		{
-			throw(NameCollisionException("Outputstream: \""+elem+"\" already exists"));
+			throw(sgraphException("Outputstream: \""+elem+"\" already exists"));
 		}
 		this->streamdict[elem] = std::shared_ptr<sgstreamspec>(0); //must be initialised in enter
 	}
 	
 	if (this->actordict.count(name)==1)
 	{
-		throw(NameCollisionException("Actor: \""+name+"\" already exists"));
+
+		throw(sgraphException("Actor: \""+name+"\" exists already"));
 	}
 	
 	actor->init(name, this, streamnamesin, streamnamesout);
@@ -99,7 +100,10 @@ void sgmanager::deleteStreamspecs(const std::set<std::string> specnames)
 	{
 		if (specnames.size()==0 || specnames.count(it.first)!=0)
 		{
-			it.second->stop();
+			if (it.second!=0)
+			{
+				it.second->stop();
+			}
 			this->streamdict.erase(it.first);
 		}
 	}
@@ -237,7 +241,14 @@ void sgactor::stop()
 	this->leave();
 	for (sgstreamspec* elem: this->streamsout)
 	{
-		elem->stop();
+		if (elem!=0)
+		{
+			elem->stop();
+		}
+		else
+		{
+			std::cerr << "\"" << this->getName() << "\" has an unintialized stream" << std::endl;
+		}
 	}
 }
 
@@ -255,7 +266,9 @@ std::vector<std::shared_ptr<sgstream>> sgactor::getStreams(bool do_block)
 	{
 		if (elem==0)
 		{
-			throw UninitializedStreamException(); // stops when using deleted stream
+
+			throw(sgraphStreamException("stream in: \""+this->getName()+"\" is uninitialized"));
+			 // stops when using deleted stream
 			//throw StopStreamspec(); // stops when using deleted stream
 		}
 		if (do_block==true)
@@ -301,7 +314,7 @@ void sgactor::step(){
 	{
 		this->stop();
 		return;
-	}catch(UninitializedStreamException &e)
+	}catch(sgraphStreamException &e)
 	{
 		//std::cerr << "Stream not initialized, stop actor:" << std::endl;
 		//std::cerr << " " << e.what() << std::endl;
@@ -325,8 +338,5 @@ void sgactor::init(const std::string &name, sgmanager *manager, const std::vecto
 	this->enter(this->streamsin, streamnamesout);
 	this->streamsout = manager->getStreamspecs(streamnamesout);
 }
-
-
-
 
 }

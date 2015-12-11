@@ -7,13 +7,12 @@ include(FindPkgConfig)
 pkg_check_modules (FFMPEG REQUIRED libavcodec libavformat libavutil libavdevice libswresample)
 
 include_directories(
-	../../
-	 ${FFMPEG_INCLUDE_DIRS}
-)
+        ../../
+) #${FFMPEG_INCLUDE_DIRS}
 
-link_libraries(
-	${FFMPEG_LIBRARY_DIRS}
-)
+#link_libraries(
+#	${FFMPEG_LIBRARY_DIRS}
+#)
 
 #avcodec avformat avutil avdevice 
 # avcodec avformat avutil avdevice 

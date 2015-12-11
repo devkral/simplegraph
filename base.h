@@ -28,61 +28,30 @@ class sgmanager;
 
 class StopStreamspec : public std::exception{};
 
-class NameCollisionException: public std::exception{
-	std::string reasonstr;
-public:
-	NameCollisionException(std::string reasonstr) : std::exception()
-	{
-		this->reasonstr=reasonstr;
-	}
-	const char* what()
-	{
-		return reasonstr.c_str();
-	}
-
-};
-
-class UninitializedStreamException : public std::exception{
-public:
-	const char* what() 
-	{
-		return "Stream uninitialized";
-	}
-};
 
 
-
-class MissingStreamException : public std::exception{
+class sgraphException : public std::exception{
 	std::string reasonstr;
 
 public:
-	MissingStreamException(std::string name) : std::exception()
+	sgraphException(std::string reason) : std::exception()
 	{
-		this->reasonstr="Input Stream: \""+name+"\" does not exist";
+		this->reasonstr=reason;
 	}
-	
+	virtual ~sgraphException(){}
+
 	const char* what()
 	{
 		return reasonstr.c_str();
 	}
 };
 
-class MissingActorException : public std::exception{
-	std::string reasonstr;
-
+class sgraphStreamException : public sgraphException
+{
 public:
-	MissingActorException(std::string name) : std::exception()
-	{
-		this->reasonstr="Actor: \""+name+"\" does not exist";
-	}
-	
-	const char* what()
-	{
-		return reasonstr.c_str();
-	}
+	sgraphStreamException(std::string reason) : sgraphException(reason){}
+
 };
-
-
 
 class sgmanager{
 private:
@@ -105,7 +74,7 @@ public:
 
 class sgstream{
 public:
-	virtual ~sgstream(){};
+	virtual ~sgstream(){}
 
 };
 
@@ -118,7 +87,7 @@ private:
 	//sgactor *owner;
 public:
 	std::set<std::string> capabilities;
-	virtual ~sgstreamspec(){};
+	virtual ~sgstreamspec(){}
 	std::shared_ptr<sgstream> getStream(int64_t blockingtime);
 	void updateStream(sgstream* streamob);
 	void stop();
@@ -156,7 +125,7 @@ protected:
 	std::set<std::string> owned_outstreams;
 
 public:
-	virtual ~sgactor(){};
+	virtual ~sgactor(){}
 	// blocking time: -1 wait infinitely for an update, 0 (default) take current element, >0 wait <nanoseconds> for update, return elsewise NULL
 	sgactor(double freq, int64_t blockingtime);
 	void stop();
@@ -172,7 +141,7 @@ public:
 	void init(const std::string &name, sgmanager *manager, const std::vector<std::string> &streamnamesin, const std::vector<std::string> &streamnamesout);
 	virtual void enter(const std::vector<sgstreamspec*> &in,const std::vector<std::string> &out)=0;
 	virtual void run(const std::vector<std::shared_ptr<sgstream>> in)=0;
-	virtual void leave(){};
+	virtual void leave(){}
 	void step();
 
 };
