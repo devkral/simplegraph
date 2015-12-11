@@ -18,7 +18,7 @@ link_libraries(
 #avcodec avformat avutil avdevice 
 # avcodec avformat avutil avdevice 
 add_library(ffmpegplugin SHARED ffmpegplugin.cpp ffmpegvideosource.cpp)
-target_link_libraries (ffmpegplugin sgbase ${FFMPEG_LIBRARIES} ${FFMPEG_LIBRARIES_OTHER})
+target_link_libraries (ffmpegplugin sgbase ${FFMPEG_LIBRARIES})
 
-add_executable(ffmpegmain ffmpegmain.cpp) # ${FFMPEG_LDFLAGS} ${FFMPEG_CFLAGS} 
-target_link_libraries (ffmpegmain ffmpegplugin sgbase ${FFMPEG_LIBRARIES} m z)
+add_executable(ffmpegmain ffmpegmain.cpp) # ${FFMPEG_LDFLAGS} ${FFMPEG_CFLAGS}
+target_link_libraries (ffmpegmain ffmpegplugin sgbase)

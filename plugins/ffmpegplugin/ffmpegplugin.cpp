@@ -16,5 +16,6 @@ sgraph::sgactor *create_pluginactor(const double freq, const int64_t blocking, c
 	{
 		return static_cast<sgraph::sgactor*>(new sgraph::ffmpegvideosource(freq, blocking, args[1], args[2]));
 	}
+    return 0;
 }
 
