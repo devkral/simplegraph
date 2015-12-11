@@ -1,6 +1,8 @@
 
 #include "ffmpegvideosource.h"
 #include <thread>
+#include <iostream>
+#include <cstring>
 
 namespace sgraph{
 
@@ -29,6 +31,7 @@ spec_ffmpegi::spec_ffmpegi(AVCodecContext *cod_context, uint8_t channels) : spec
 ffmpegvideosource::ffmpegvideosource(double freq, int64_t blocking, std::string format, std::string device): sgactor(freq, blocking)
 {
 	this->devicename=device;
+	//av_register_all();
 }
 
 void ffmpegvideosource::enter(const std::vector<sgstreamspec*> &in,const std::vector<std::string> &out)
@@ -40,7 +43,8 @@ void ffmpegvideosource::enter(const std::vector<sgstreamspec*> &in,const std::ve
 	av_input_video_device_next(this->input_device_format);
 	while (this->input_device_format!=0)
 	{
-		if( this->devicename!="" || this->devicename.c_str()!=this->input_device_format->name)
+		std::cout << "meep " << this->input_device_format->name << std::endl;
+		if( this->devicename!="" || strcmp(this->devicename.c_str(), this->input_device_format->name)==0)
 			break;
 		av_input_video_device_next(this->input_device_format);
 	}

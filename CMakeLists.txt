@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.0)
+cmake_minimum_required (VERSION 3.1)
 
 #project(simplegraph-base)
 
@@ -11,7 +11,7 @@ IF(UNIX)
 	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 	set (pluginlinkerflags "-ldl")
 	#set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -ldl")
-ENDIF()
+ENDIF(UNIX)
 
 
 # add the binary tree to the search path for include files

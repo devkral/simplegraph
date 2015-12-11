@@ -1,8 +1,24 @@
 
-cmake_minimum_required (VERSION 3.0)
+cmake_minimum_required (VERSION 3.1)
+
+include(FindPkgConfig)
+
+
+pkg_check_modules (FFMPEG REQUIRED libavcodec libavformat libavutil libavdevice libswresample)
 
 include_directories(
 	../../
+	 ${FFMPEG_INCLUDE_DIRS}
 )
+
+link_libraries(
+	${FFMPEG_LIBRARY_DIRS}
+)
+
+#avcodec avformat avutil avdevice 
+# avcodec avformat avutil avdevice 
 add_library(ffmpegplugin SHARED ffmpegplugin.cpp ffmpegvideosource.cpp)
-target_link_libraries (ffmpegplugin sgbase avcodec avformat avutil avdevice)
+target_link_libraries (ffmpegplugin sgbase ${FFMPEG_LIBRARIES} ${FFMPEG_LIBRARIES_OTHER})
+
+add_executable(ffmpegmain ffmpegmain.cpp) # ${FFMPEG_LDFLAGS} ${FFMPEG_CFLAGS} 
+target_link_libraries (ffmpegmain ffmpegplugin sgbase ${FFMPEG_LIBRARIES} m z)
