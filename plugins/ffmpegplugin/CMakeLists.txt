@@ -16,7 +16,7 @@ include_directories(
 
 #avcodec avformat avutil avdevice 
 # avcodec avformat avutil avdevice 
-add_library(ffmpegplugin SHARED ffmpegplugin.cpp ffmpegvideosource.cpp)
+add_library(ffmpegplugin SHARED ffmpegplugin.cpp ffmpegvideosource.cpp ffmpegvideowrite.cpp)
 target_link_libraries (ffmpegplugin sgbase ${FFMPEG_LIBRARIES})
 
 add_executable(ffmpegmain ffmpegmain.cpp) # ${FFMPEG_LDFLAGS} ${FFMPEG_CFLAGS}
