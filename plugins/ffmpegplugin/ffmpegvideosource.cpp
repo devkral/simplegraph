@@ -33,12 +33,12 @@ ffmpegvideosource::ffmpegvideosource(double freq, int64_t blocking, std::string 
 {
 	this->formatname=format;
 	this->devicename=device;
-	avdevice_register_all();
-	av_register_all();
 }
 
 void ffmpegvideosource::enter(const std::vector<sgstreamspec*> &in,const std::vector<std::string> &out)
 {
+	avdevice_register_all();
+	av_register_all();
 	if (in.size()!=0 || out.size()!=1)
 		throw(sgraph::sgraphStreamException("invalid amount of in- or outstreams"));
 	
@@ -55,7 +55,7 @@ void ffmpegvideosource::enter(const std::vector<sgstreamspec*> &in,const std::ve
 	{
 		throw(sgraphException("Error: finding video device failed"));
 	}
-	av_init_packet(&this->packet);
+	av_init_packet(this->packet);
 	this->frame = av_frame_alloc();
 	this->input_device_format->read_header(this->form_context);
 	int video_stream_index = av_find_best_stream(this->form_context, AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0);
@@ -77,9 +77,9 @@ void ffmpegvideosource::run(const std::vector<std::shared_ptr<sgstream>> in)
 	//this->packet.data=0;
 	//this->packet.size=0;
 
-	this->input_device_format->read_packet(this->form_context, &this->packet);
+	this->input_device_format->read_packet(this->form_context, this->packet);
 	//av_read_frame(&this->contex, &packet)
-	avcodec_decode_video2(this->cod_context, this->frame, &this->got_frame, &this->packet);
+	avcodec_decode_video2(this->cod_context, this->frame, &this->got_frame, this->packet);
 	if (this->got_frame==0)
 		return;
 	int size = av_image_get_buffer_size(AV_PIX_FMT_RGBA64, this->frame->width, this->frame->height, 4);
@@ -98,7 +98,7 @@ void ffmpegvideosource::leave()
 
 ffmpegvideosource::~ffmpegvideosource()
 {
-	av_free_packet(&this->packet);
+	av_free_packet(this->packet);
 	av_frame_free(&this->frame);
 	if (this->input_device_format)
 		av_freep (this->input_device_format);

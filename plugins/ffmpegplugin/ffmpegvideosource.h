@@ -43,7 +43,7 @@ protected:
 	AVCodec *codec=0;
 	AVFormatContext *form_context=0;
 	AVCodecContext *cod_context=0;
-	AVPacket packet;
+	AVPacket *packet=0;
 	AVFrame *frame=0;
 	int got_frame;
 public:
