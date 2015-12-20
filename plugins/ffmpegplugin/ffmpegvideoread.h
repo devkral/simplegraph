@@ -1,7 +1,11 @@
 
-#ifndef FFMPEGVIDEOSOURCE_H
-#define FFMPEGVIDEOSOURCE_H
+#ifndef FFMPEGVIDEOREAD_H
+#define FFMPEGVIDEOREAD_H
+
 #include "ffmpegpluginbase.h"
+
+
+
 
 namespace sgraph{
 

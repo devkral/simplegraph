@@ -1,5 +1,5 @@
 
-#include "ffmpegvideosource.h"
+#include "ffmpegpluginbase.h"
 #include <thread>
 #include <iostream>
 #include <cstring>

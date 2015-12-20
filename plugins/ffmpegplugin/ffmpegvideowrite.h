@@ -1,17 +1,7 @@
 
 #ifndef FFMPEGVIDEOWRITE_H
 #define FFMPEGVIDEOWRITE_H
-
-extern "C"
-{
-#include "libavformat/avformat.h"
-#include "libswscale/swscale.h"
-}
-
-
-#include "base.h"
-#include "basespecs.h"
-#include "ffmpegvideosource.h"
+#include "ffmpegpluginbase.h"
 
 
 

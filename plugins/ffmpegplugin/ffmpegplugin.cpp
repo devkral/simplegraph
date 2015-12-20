@@ -8,13 +8,16 @@ sgraph::sgactor *create_pluginactor(const double freq, const int64_t blocking, c
 {
 	if (args.size()==0)
 	{
-        std::cerr << "Too few arguments" << std::endl;
+		std::cerr << "Too few arguments" << std::endl;
 		return 0;
 	}
-	if (args[0]=="videosource")
+	if (args[0]=="videoread")
+	{
+		return static_cast<sgraph::sgactor*>(new sgraph::ffmpegvideosource(freq, blocking, args[1], args[2]));
+	} else if (args[0]=="videowrite")
 	{
 		return static_cast<sgraph::sgactor*>(new sgraph::ffmpegvideosource(freq, blocking, args[1], args[2]));
 	}
-    return 0;
+	return 0;
 }
 

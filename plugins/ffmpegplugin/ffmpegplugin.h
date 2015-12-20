@@ -4,8 +4,7 @@
 
 #include "base.h"
 
-#include "ffmpegvideosource.h"
-#include <libavcodec/avcodec.h>
+#include "ffmpegvideoread.h"
 
 extern "C" sgraph::sgactor* create_pluginactor(const double freq, const int64_t blocking, const std::vector<std::string> args);
 
