@@ -7,27 +7,8 @@
 
 namespace sgraph{
 
-//stream_ffmpegi::stream_ffmpegi(uint8_t * data[4], enum AVPixelFormat pix_fmt) : sgstream()
-//{
-	/**av_image_fill_pointers 	(data,pix_fmt,height,
-		this->ptr,
-		const int  	linesizes[4] 
-	) 	*/
 
-//}
-
-
-
-spec_ffmpegi::spec_ffmpegi(AVCodecContext *cod_context, uint8_t channels) : spec_image()
-{
-	this->capabilities.insert("spec_ffmpegi");
-	this->width = cod_context->width;
-	this->height = cod_context->height;
-	this->channels=channels;
-	//RGBA
-	//uint64_t width, uint64_t height, uint32_t channels
-}
-
+// TODO: bring this code to run; ffmpeg magic does return NOTHING
 
 ffmpegvideosource::ffmpegvideosource(double freq, int64_t blocking, std::string format, std::string device): sgactor(freq, blocking)
 {
@@ -106,9 +87,9 @@ ffmpegvideosource::~ffmpegvideosource()
 	if (this->codec)
 		av_freep (this->codec);
 	if (this->cod_context)
-		av_freep (this->cod_context);
+		avcodec_close (this->cod_context);
 	if (this->form_context)
-		av_freep (this->form_context);
+		avformat_close_input (&this->form_context);
 }
 
 
