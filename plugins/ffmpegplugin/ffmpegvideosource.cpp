@@ -20,25 +20,33 @@ void ffmpegvideosource::enter(const std::vector<sgstreamspec*> &in,const std::ve
 {
 	av_register_all();
 	avdevice_register_all();
-	if (in.size()!=0 || out.size()!=1)
-		throw(sgraph::sgraphStreamException("invalid amount of in- or outstreams"));
-	
-	this->input_device_format=NULL;
-	av_input_video_device_next(this->input_device_format);
-	std::cerr << "moopp" << this->input_device_format << std::endl;
-	while (this->input_device_format!=NULL)
-	{
-		std::cerr << "meeeeep" << this->input_device_format->name << std::endl;
-		if( this->devicename!="" || strcmp(this->devicename.c_str(), this->input_device_format->name)==0)
-			break;
-		av_input_video_device_next(this->input_device_format);
-	}
-	if (this->input_device_format==NULL)
-	{
-		throw(sgraphException("Error: finding video device failed"));
-	}
+	avcodec_register_all();
 	av_init_packet(this->packet);
 	this->frame = av_frame_alloc();
+	if (in.size()!=0 || out.size()!=1)
+		throw(sgraph::sgraphStreamException("invalid amount of in- or outstreams"));
+
+
+	AVInputFormat *input_device_format=NULL;
+	input_device_format = av_input_video_device_next(input_device_format);
+	while (input_device_format!=NULL)
+	{
+		if( this->formatname!="" || strcmp(this->formatname.c_str(), input_device_format->name)==0)
+			break;
+		input_device_format = av_input_video_device_next(input_device_format);
+	}
+	if (input_device_format==NULL)
+	{
+		throw(sgraphException("Error: finding video input format failed"));
+	}
+	AVFormatContext *formcont=NULL;
+	AVDeviceInfoList *devices=NULL;
+
+
+
+
+
+	input_device_format;
 	this->input_device_format->read_header(this->form_context);
 	int video_stream_index = av_find_best_stream(this->form_context, AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0);
 	this->cod_context = this->form_context->streams[video_stream_index]->codec;

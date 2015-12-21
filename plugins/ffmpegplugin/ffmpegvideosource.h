@@ -10,6 +10,7 @@ protected:
 	std::string devicename;
 	std::string formatname;
 	AVInputFormat *input_device_format=0;
+	AVDeviceInfoList *devices=0;
 	AVCodec *codec=0;
 	AVFormatContext *form_context=0;
 	AVCodecContext *cod_context=0;
