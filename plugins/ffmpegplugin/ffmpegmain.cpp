@@ -17,24 +17,28 @@ int main(int argc, char *argv[])
 	avdevice_register_all ();
 	avcodec_register_all();
 
-	AVInputFormat *input_device_format=NULL;
+	AVInputFormat *input_device_format=NULL, *input_device_format2=NULL;
 	input_device_format = av_input_video_device_next(input_device_format);
-	AVInputFormat *lala=0;
+	AVInputFormat *lala=NULL;
 	AVFormatContext *lala2=0; //avformat_alloc_context();
 	//ff_alloc_input_device_context(&lala2, lala, lala->name);
 	AVDeviceInfoList *devices=0;
 	while (input_device_format!=NULL)
 	{
-		std::cerr << "deviceformat: " << input_device_format->name << std::endl;
-		if (strcmp(input_device_format->name,"video4linux2,v4l2")) //video4linux2,v4l2"))
+		if (strcmp(input_device_format->name,"video4linux2,v4l2")==0)
+		{
 			lala = input_device_format;
+		}
+		std::cout << "deviceformat: " << input_device_format->name << std::endl;
 		input_device_format = av_input_video_device_next(input_device_format);
 	}
+
 	if (lala==0)
 	{
 		return 1;
 	}
-	if (avformat_open_input(&lala2, NULL, lala, NULL)!=0)
+	std::cerr << "cur deviceformat: " << lala->name << std::endl;
+	if (avformat_open_input(&lala2, "/dev/video0", lala, NULL)!=0)
 	{
 		std::cerr << "init lala2 failed\n";
 		return -1;
@@ -49,14 +53,13 @@ int main(int argc, char *argv[])
 		avformat_free_context(lala2);
 		return errorno;
 	}
-	std::cerr << devices->nb_devices << std::endl;
 	for (int count=0;count<devices->nb_devices; count++)
 	{
 		std::cout << "device: " << devices->devices[count]->device_name << std::endl;
 	}
 	avdevice_free_list_devices(&devices);
-	//avformat_close_input (&lala2);
-	avformat_free_context(lala2);
+	avformat_close_input (&lala2);
+	//avformat_free_context(lala2);
 	return 0;
 	/*if (argc<2)
 	{

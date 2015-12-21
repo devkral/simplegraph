@@ -27,7 +27,7 @@ void ffmpegvideosource::enter(const std::vector<sgstreamspec*> &in,const std::ve
 		throw(sgraph::sgraphStreamException("invalid amount of in- or outstreams"));
 
 
-	AVInputFormat *input_device_format=NULL;
+	input_device_format=NULL;
 	input_device_format = av_input_video_device_next(input_device_format);
 	while (input_device_format!=NULL)
 	{
@@ -39,17 +39,15 @@ void ffmpegvideosource::enter(const std::vector<sgstreamspec*> &in,const std::ve
 	{
 		throw(sgraphException("Error: finding video input format failed"));
 	}
-	AVFormatContext *formcont=NULL;
-	AVDeviceInfoList *devices=NULL;
 
 
-
-
-
-	input_device_format;
-	this->input_device_format->read_header(this->form_context);
-	int video_stream_index = av_find_best_stream(this->form_context, AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0);
-	this->cod_context = this->form_context->streams[video_stream_index]->codec;
+	if (avformat_open_input(&this->input_context, this->devicename.c_str(), input_device_format, NULL)!=0)
+	{
+		std::cerr << "init input_context failed\n";
+		return ;
+	}
+	int video_stream_index = av_find_best_stream(this->input_context, AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0);
+	this->cod_context = this->input_context->streams[video_stream_index]->codec;
 	//av_opt_set_int(this->codec, "refcounted_frames", 1, 0);
 	/* init the video decoder */
 	if (avcodec_open2(this->cod_context, NULL, NULL) < 0) {
@@ -67,7 +65,7 @@ void ffmpegvideosource::run(const std::vector<std::shared_ptr<sgstream>> in)
 	//this->packet.data=0;
 	//this->packet.size=0;
 
-	this->input_device_format->read_packet(this->form_context, this->packet);
+	this->input_device_format->read_packet(this->input_context, this->packet);
 	//av_read_frame(&this->contex, &packet)
 	avcodec_decode_video2(this->cod_context, this->frame, &this->got_frame, this->packet);
 	if (this->got_frame==0)
@@ -96,8 +94,8 @@ ffmpegvideosource::~ffmpegvideosource()
 		av_freep (this->codec);
 	if (this->cod_context)
 		avcodec_close (this->cod_context);
-	if (this->form_context)
-		avformat_close_input (&this->form_context);
+	if (this->input_context)
+		avformat_close_input (&this->input_context);
 }
 
 
