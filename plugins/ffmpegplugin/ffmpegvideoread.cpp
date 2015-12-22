@@ -21,8 +21,6 @@ ffmpegvideoread::ffmpegvideoread(double freq, int64_t blocking, std::string sour
 {
 	this->sourcepath=sourcepath;
 	this->sourceprovider=sourceprovider;
-	ffmpeg::av_init_packet(&this->packet);
-	this->frame = ffmpeg::av_frame_alloc();
 }
 
 void ffmpegvideoread::enter(const std::vector<sgstreamspec*> &in,const std::vector<std::string> &out)
@@ -79,9 +77,10 @@ void ffmpegvideoread::enter(const std::vector<sgstreamspec*> &in,const std::vect
 		throw(sgraphException("Error: codec could not be opened"));
 	}
 
-
-
 	this->getManager()->updateStreamspec(out[0], new spec_ffmpegi(this->cod_context, 4));
+
+	ffmpeg::av_init_packet(&this->packet);
+	this->frame = ffmpeg::av_frame_alloc();
 	this->intern_thread=new std::thread(sgactor::thread_wrapper, this);
 }
 void ffmpegvideoread::run(const std::vector<std::shared_ptr<sgstream>> in)
@@ -117,24 +116,21 @@ void ffmpegvideoread::leave()
 	//if (this->input_device_format)
 	//	av_freep (this->input_device_format);
 	// Close the codec
-	if (this->cod_context)
-	{
-		ffmpeg::avcodec_close (this->cod_context);
-		this->cod_context = 0;
-	}
 	// Close the video file
-	if (this->form_context)
-	{
-		ffmpeg::avformat_close_input (&this->form_context);
-		this->form_context = 0;
-	}
+	ffmpeg::av_frame_free(&this->frame);
+	ffmpeg::av_free_packet(&this->packet);
+
+	ffmpeg::avcodec_close (this->cod_context);
+	this->cod_context = 0;
+
+	ffmpeg::avformat_close_input (&this->form_context);
+	this->form_context = 0;
+
 }
 
 ffmpegvideoread::~ffmpegvideoread()
 {
 
-	ffmpeg::av_free_packet(&this->packet);
-	ffmpeg::av_frame_free(&this->frame);
 
 	//if (this->input_device_format)
 	//	av_freep (this->input_device_format);

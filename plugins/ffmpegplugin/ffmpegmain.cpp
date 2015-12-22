@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
 	std::vector<std::string> ac1streamsout;
 	ac1streamsout.push_back("stream1");
 	try{
-		man.addActor("video",new ffmpegvideoread(1,1,argv[1]), ac1streamsin, ac1streamsout);
+		man.addActor("video_reader",new ffmpegvideoread(-1,1,argv[1],"video4linux2,v4l2"), ac1streamsin, ac1streamsout);
 
 	}
 	catch(sgraphException &e)
@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
 	}
 
 	std::vector<std::string> actorsretrieve;
-	actorsretrieve.push_back("video");
+	actorsretrieve.push_back("video_reader");
 	for (sgraph::sgactor* actor : man.getActors(actorsretrieve))
 	{
 		std::cout << "Actorname:" << actor->getName() << std::endl;

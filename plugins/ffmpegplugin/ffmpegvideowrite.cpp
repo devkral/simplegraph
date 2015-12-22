@@ -19,10 +19,12 @@ namespace sgraph{
 
 
 
-ffmpegvideowrite::ffmpegvideowrite(double freq, int64_t blocking, std::string outformat, std::string outfile): sgactor(freq, blocking)
+ffmpegvideowrite::ffmpegvideowrite(double freq, int64_t blocking, std::string outfile, std::string outformat): sgactor(freq, blocking)
 {
+	this->outsink=outsink;
 	this->outformat=outformat;
-	this->filename=outfile;
+	ffmpeg::av_init_packet(&this->packet);
+	this->frame = ffmpeg::av_frame_alloc();
 }
 
 void ffmpegvideowrite::enter(const std::vector<sgstreamspec*> &in,const std::vector<std::string> &out)
@@ -53,7 +55,9 @@ void ffmpegvideowrite::leave()
 
 ffmpegvideowrite::~ffmpegvideowrite()
 {
+
 	ffmpeg::av_free_packet(&this->packet);
+	ffmpeg::av_frame_free(&this->frame);
 }
 
 
