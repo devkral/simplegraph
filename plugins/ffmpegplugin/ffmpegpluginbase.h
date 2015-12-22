@@ -5,6 +5,8 @@
 #include "base.h"
 #include "basespecs.h"
 
+namespace ffmpeg
+{
 extern "C"
 {
 //#include <libavutil/opt.h>
@@ -19,6 +21,7 @@ extern "C"
 #include <libavutil/imgutils.h>
 //#include <libavutil/samplefmt.h>
 }
+}
 
 namespace sgraph{
 class ffmpegi_stream : public sgstream{
@@ -29,7 +32,7 @@ public:
 
 class spec_ffmpegi : public spec_image{
 public:
-	spec_ffmpegi(AVCodecContext *cod_context, uint8_t channels);
+	spec_ffmpegi(ffmpeg::AVCodecContext *cod_context, uint8_t channels);
 
 };
 }

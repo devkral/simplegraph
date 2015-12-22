@@ -13,13 +13,17 @@ sgraph::sgactor *create_pluginactor(const double freq, const int64_t blocking, c
 	}
 	if (args[0]=="videoread")
 	{
-		return static_cast<sgraph::sgactor*>(new sgraph::ffmpegvideoread(freq, blocking, args[1]));
+		if (args.size()==2)
+		{
+			return static_cast<sgraph::sgactor*>(new sgraph::ffmpegvideoread(freq, blocking, args[1]));
+		}
+		else
+		{
+			return static_cast<sgraph::sgactor*>(new sgraph::ffmpegvideoread(freq, blocking, args[1], args[2]));
+		}
 	} else if (args[0]=="videowrite")
 	{
 		return static_cast<sgraph::sgactor*>(new sgraph::ffmpegvideowrite(freq, blocking, args[1], args[2]));
-	}else if (args[0]=="videosource")
-	{
-		return static_cast<sgraph::sgactor*>(new sgraph::ffmpegvideosource(freq, blocking, args[1], args[2]));
 	}
 	return 0;
 }

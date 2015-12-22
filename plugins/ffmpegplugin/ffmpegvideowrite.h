@@ -11,15 +11,15 @@ class ffmpegvideowrite : public sgactor{
 protected:
 	std::string filename;
 	std::string outformat;
-	AVInputFormat *input_device_format=0;
-	AVCodec *codec=0;
-	AVFormatContext *form_context=0;
-	AVCodecContext *cod_context=0;
-	AVPacket packet;
-	AVFrame *frame=0;
+	ffmpeg::AVInputFormat *input_device_format=0;
+	ffmpeg::AVCodec *codec=0;
+	ffmpeg::AVFormatContext *form_context=0;
+	ffmpeg::AVCodecContext *cod_context=0;
+	ffmpeg::AVPacket packet;
+	ffmpeg::AVFrame *frame=0;
 	int got_frame;
 public:
-	ffmpegvideowrite(double freq, int64_t blocking, std::string format, std::string out="a.out");
+	ffmpegvideowrite(double freq, int64_t blocking, std::string format, std::string out);
 	~ffmpegvideowrite();
 	void enter(const std::vector<sgstreamspec*> &in,const std::vector<std::string> &out);
 	void run(const std::vector<std::shared_ptr<sgstream>> in);
