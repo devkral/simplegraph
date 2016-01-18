@@ -25,7 +25,7 @@ ffmpegwrite::ffmpegwrite(double freq, int64_t blocking, std::string outsink, std
 	this->outformat=outformat;
 }
 
-void ffmpegvideowrite::enter(const std::vector<sgstreamspec*> &in,const std::vector<std::string> &out)
+void ffmpegwrite::enter(const std::vector<sgstreamspec*> &in,const std::vector<std::string> &out)
 {
 	int error;
 	ffmpeg::av_register_all();

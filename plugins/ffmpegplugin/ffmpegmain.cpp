@@ -1,5 +1,5 @@
 
-#include "ffmpegvideoread.h"
+#include "ffmpegread.h"
 #include "ffmpegpluginbase.h"
 #include <iostream>
 
@@ -18,7 +18,7 @@ int main(int argc, char *argv[])
 	std::vector<std::string> ac1streamsout;
 	ac1streamsout.push_back("stream1");
 	try{
-		man.addActor("video_reader",new ffmpegvideoread(-1,1,argv[1]), ac1streamsin, ac1streamsout);
+		man.addActor("video_reader",new ffmpegread(-1,1,argv[1]), ac1streamsin, ac1streamsout);
 
 	}
 	catch(sgraphException &e)
