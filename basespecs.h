@@ -3,6 +3,7 @@
 #ifndef SGBASESPECS_H
 #define SGBASESPECS_H
 #include "base.h"
+#include <iostream>
 
 //#include <cstdlib>
 
@@ -16,10 +17,12 @@ public:
 	{
 		this->ptr=ptr;
 		this->size=size;
+		std::cerr << "init\n";
 	}
 	~stream_data()
 	{
-		free(ptr);
+		free(this->ptr);
+		std::cerr << "freed\n";
 	}
 
 };
@@ -87,7 +90,7 @@ class spec_log : public spec_text{
 public:
 	spec_log() : spec_text(){
 		this->capabilities.insert("spec_log");
-	};
+	}
 
 };
 
@@ -99,7 +102,7 @@ public:
 	debugactor(uint8_t loglevel);
 	void enter(const std::vector<sgstreamspec*> &in,const std::vector<std::string> &out);
 	void run(const std::vector<std::shared_ptr<sgstream>> in);
-	void leave(){};
+	void leave(){}
 };
 
 }

@@ -18,14 +18,14 @@ protected:
 	ffmpeg::AVFormatContext *form_context=0;
 	ffmpeg::AVCodecContext *cod_context=0;
 	ffmpeg::AVPacket packet;
-	ffmpeg::AVFrame *frame=0;
+	ffmpeg::AVFrame *origframe=0, *convertframe=0;
 	int got_frame;
 	int video_stream_index=-1;
 public:
 	ffmpegvideoread(double freq, int64_t blocking, std::string sourcepath, std::string sourceprovider="");
 	~ffmpegvideoread();
 	void enter(const std::vector<sgstreamspec*> &in,const std::vector<std::string> &out);
-	void run(const std::vector<std::shared_ptr<sgstream>> in);
+	void run(const std::vector<std::shared_ptr<sgstream>> );
 	void leave();
 
 

@@ -83,28 +83,34 @@ void ffmpegvideoread::enter(const std::vector<sgstreamspec*> &in,const std::vect
 	this->frame = ffmpeg::av_frame_alloc();
 	this->intern_thread=new std::thread(sgactor::thread_wrapper, this);
 }
-void ffmpegvideoread::run(const std::vector<std::shared_ptr<sgstream>> in)
+void ffmpegvideoread::run(const std::vector<std::shared_ptr<sgstream>> )
 {
 	//this->packet.data=0;
 	//this->packet.size=0;
 	if (ffmpeg::av_read_frame(this->form_context, &this->packet)<0)
 		return;
 	// dismiss wrong packets
+	std::cout << "read1\n";
 	while(packet.stream_index!=this->video_stream_index)
 	{
 		if (ffmpeg::av_read_frame(this->form_context, &this->packet)<0)
 			return;
 	}
+	std::cout << "read2\n";
 
 
 	//this->input_device_format->read_packet(this->form_context, this->packet);
 	//av_read_frame(&this->contex, &packet)
-	ffmpeg::avcodec_decode_video2(this->cod_context, this->frame, &this->got_frame, &this->packet);
+	ffmpeg::avcodec_decode_video2(this->cod_context, this->origframe, &this->got_frame, &this->packet);
 	if (this->got_frame==0)
 		return;
-	int size = ffmpeg::av_image_get_buffer_size(ffmpeg::AV_PIX_FMT_RGBA64, this->frame->width, this->frame->height, 4);
+	int size = ffmpeg::av_image_get_buffer_size(ffmpeg::AV_PIX_FMT_RGBA64, this->origframe->width, this->origframe->height, 0);
+	std::cout << size << std::endl;
 	uint8_t *buffer=(uint8_t*)calloc(sizeof(uint8_t),size);
-	ffmpeg::av_image_copy_to_buffer(buffer,size, this->frame->data, this->frame->linesize, ffmpeg::AV_PIX_FMT_RGBA64, this->frame->width, this->frame->height, 4);
+	ffmpeg::sws_scale(sws_ctx, (uint8_t const * const *)this->frame->data,
+			 this->frame->linesize, 0, this->cod_context->height,
+			 pFrameRGB->data, pFrameRGB->linesize)
+	ffmpeg::av_image_copy_to_buffer(buffer,size, this->frame->data, this->frame->linesize, ffmpeg::AV_PIX_FMT_RGBA64, this->frame->width, this->frame->height, 0);
 	this->streamsout[0]->updateStream(new stream_data(buffer, size));
 	//this->packet.data=0;
 	//this->packet.size=0;
@@ -117,7 +123,8 @@ void ffmpegvideoread::leave()
 	//	av_freep (this->input_device_format);
 	// Close the codec
 	// Close the video file
-	ffmpeg::av_frame_free(&this->frame);
+	ffmpeg::av_frame_free(&this->origframe);
+	ffmpeg::av_frame_free(&this->convertframe);
 	ffmpeg::av_free_packet(&this->packet);
 
 	ffmpeg::avcodec_close (this->cod_context);
