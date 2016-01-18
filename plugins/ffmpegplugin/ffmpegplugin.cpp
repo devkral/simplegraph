@@ -11,19 +11,26 @@ sgraph::sgactor *create_pluginactor(const double freq, const int64_t blocking, c
 		std::cerr << "Too few arguments" << std::endl;
 		return 0;
 	}
-	if (args[0]=="videoread")
+	if (args[0]=="read")
 	{
-		if (args.size()==2)
+		if (args.size()==1)
 		{
-			return static_cast<sgraph::sgactor*>(new sgraph::ffmpegvideoread(freq, blocking, args[1]));
+			return static_cast<sgraph::sgactor*>(new sgraph::ffmpegread(freq, blocking, args[1]));
 		}
 		else
 		{
-			return static_cast<sgraph::sgactor*>(new sgraph::ffmpegvideoread(freq, blocking, args[1], args[2]));
+			return static_cast<sgraph::sgactor*>(new sgraph::ffmpegread(freq, blocking, args[1], args[2]));
 		}
-	} else if (args[0]=="videowrite")
+	} else if (args[0]=="write")
 	{
-		return static_cast<sgraph::sgactor*>(new sgraph::ffmpegvideowrite(freq, blocking, args[1], args[2]));
+		if (args.size()==1)
+		{
+			return static_cast<sgraph::sgactor*>(new sgraph::ffmpegwrite(freq, blocking, args[1]));
+		}
+		else
+		{
+			return static_cast<sgraph::sgactor*>(new sgraph::ffmpegwrite(freq, blocking, args[1], args[2]));
+		}
 	}
 	return 0;
 }

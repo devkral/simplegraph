@@ -260,30 +260,33 @@ std::shared_ptr<sgstream> getStreamhelper(sgstreamspec *t, int64_t blockingtime)
 
 std::vector<std::shared_ptr<sgstream>> sgactor::getStreams(bool do_block)
 {
-	this->_tretgetStreams.clear();
-	this->_thandlesgetStreams.clear();
-	for (sgstreamspec* elem: this->streamsin)
+	// shortcut when no input stream is available
+	if (this->streamsin.size()>0)
 	{
-		if (elem==0)
+		this->_tretgetStreams.clear();
+		this->_thandlesgetStreams.clear();
+		for (sgstreamspec* elem: this->streamsin)
 		{
+			if (elem==0)
+			{
+				throw(sgraphStreamException("stream in: \""+this->getName()+"\" is uninitialized"));
+				// stops when using deleted stream
+				//throw StopStreamspec(); // stops when using deleted stream
+			}
+			if (do_block==true)
+			{
+				_thandlesgetStreams.emplace_back(std::async(std::launch::async, getStreamhelper, elem, -1));
+			}else
+			{
+				_thandlesgetStreams.emplace_back(std::async(std::launch::async, getStreamhelper, elem, this->blockingtime));
+			}
+		}
 
-			throw(sgraphStreamException("stream in: \""+this->getName()+"\" is uninitialized"));
-			 // stops when using deleted stream
-			//throw StopStreamspec(); // stops when using deleted stream
-		}
-		if (do_block==true)
+		for (std::future<std::shared_ptr<sgstream>> &elem: _thandlesgetStreams)
 		{
-			_thandlesgetStreams.emplace_back(std::async(std::launch::async, getStreamhelper, elem, -1));
-		}else
-		{
-			_thandlesgetStreams.emplace_back(std::async(std::launch::async, getStreamhelper, elem, this->blockingtime));
+			elem.wait();
+			_tretgetStreams.emplace_back(elem.get());
 		}
-	}
-	
-	for (std::future<std::shared_ptr<sgstream>> &elem: _thandlesgetStreams)
-	{
-		elem.wait();
-		_tretgetStreams.emplace_back(elem.get());
 	}
 	return _tretgetStreams;
 }
@@ -304,9 +307,12 @@ void sgactor::step(){
 	}
 	auto tstart =  std::chrono::steady_clock::now();
 	auto tosleep = this->time_sleep-(tstart-this->time_previous);
-	if (this->time_lock.try_lock_for(std::chrono::duration_cast<std::chrono::nanoseconds> (tosleep)))
+	if (tosleep>std::chrono::nanoseconds(0))
 	{
-		return;
+		if (this->time_lock.try_lock_for(std::chrono::duration_cast<std::chrono::nanoseconds> (tosleep)))
+		{
+			return;
+		}
 	}
 	try{
 		this->run(this->getStreams());
@@ -317,14 +323,14 @@ void sgactor::step(){
 	}catch(sgraphStreamException &e)
 	{
 		//std::cerr << "Stream not initialized, stop actor:" << std::endl;
-		//std::cerr << " " << e.what() << std::endl;
+		std::cerr << " " << e.what() << std::endl;
 		this->stop();
 		return;
 	}
 	
 	this->time_previous = std::chrono::steady_clock::now();
 	//this->transform(sgactor, std::forward(sgactor));
-};
+}
 
 void sgactor::init(const std::string &name, sgmanager *manager, const std::vector<std::string> &streamnamesin, const std::vector<std::string> &streamnamesout)
 {

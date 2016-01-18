@@ -10,7 +10,7 @@ include_directories(
 ../../
 ) 
 
-add_library(ffmpegplugin SHARED ffmpegplugin.cpp ffmpegvideoread.cpp ffmpegvideowrite.cpp ffmpegpluginbase.cpp)
+add_library(ffmpegplugin SHARED ffmpegplugin.cpp ffmpegread.cpp ffmpegwrite.cpp ffmpegpluginbase.cpp)
 target_link_libraries (ffmpegplugin sgbase ${FFMPEG_LIBRARIES})
 
 add_executable(ffmpegmain ffmpegmain.cpp)
