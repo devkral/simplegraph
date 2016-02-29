@@ -78,14 +78,14 @@ void ffmpegread::run(const std::vector<std::shared_ptr<sgstream>> )
 }
 void ffmpegread::leave()
 {
-	ffmpeg::avformat_close_input (&this->form_context);
-	this->form_context = 0;
 
 }
 
 ffmpegread::~ffmpegread()
 {
 	if (this->form_context)
+	{
 		ffmpeg::avformat_close_input (&this->form_context);
+	}
 }
 }

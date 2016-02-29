@@ -55,12 +55,11 @@ spec_ffmpeg_packet::spec_ffmpeg_packet(bool encode, ffmpeg::AVCodecContext *vide
 }
 spec_ffmpeg_packet::~spec_ffmpeg_packet()
 {
-	//cleared by close_input
-	/**if (this->videocontext)
-		ffmpeg::avcodec_free_context (&this->videocontext);
+	//cleared by close_input, but must be closed here
+	if (this->videocontext)
+		ffmpeg::avcodec_close (this->videocontext);
 	if (this->audiocontext)
-		ffmpeg::avcodec_free_context (&this->audiocontext);*/
-
+		ffmpeg::avcodec_close (this->audiocontext);
 }
 
 spec_ffmpeg_image::spec_ffmpeg_image(ffmpeg::AVCodecContext *cod_context, uint8_t channels) : spec_image()
