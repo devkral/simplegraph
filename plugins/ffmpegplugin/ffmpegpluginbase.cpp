@@ -13,7 +13,7 @@ stream_ffmpeg_packet::stream_ffmpeg_packet(ffmpeg::AVPacket *packet) : sgstream(
 
 stream_ffmpeg_packet::~stream_ffmpeg_packet()
 {
-	ffmpeg::av_free_packet(&this->packet);
+	ffmpeg::av_packet_unref(&this->packet);
 }
 
 

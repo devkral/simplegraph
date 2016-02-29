@@ -74,7 +74,7 @@ void ffmpegread::run(const std::vector<std::shared_ptr<sgstream>> )
 		}
 	}
 	this->streamsout[0]->updateStream(new stream_ffmpeg_packet(&this->packet));
-	ffmpeg::av_free_packet(&this->packet);
+	ffmpeg::av_packet_unref(&this->packet);
 }
 void ffmpegread::leave()
 {
