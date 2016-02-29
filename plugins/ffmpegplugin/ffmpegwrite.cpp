@@ -58,8 +58,6 @@ void ffmpegwrite::run(const std::vector<std::shared_ptr<sgstream>> in)
 void ffmpegwrite::leave()
 {
 
-	ffmpeg::avformat_free_context(this->form_context);
-	this->form_context=0;
 }
 
 ffmpegwrite::~ffmpegwrite()

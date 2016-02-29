@@ -17,10 +17,11 @@ namespace sgraph{
 
 
 
-ffmpegread::ffmpegread(double freq, int64_t blocking, std::string sourcepath, std::string sourceprovider): sgactor(freq, blocking)
+ffmpegread::ffmpegread(double freq, int64_t blocking, std::string sourcepath, std::string sourceprovider, std::string type): sgactor(freq, blocking)
 {
 	this->sourcepath=sourcepath;
 	this->sourceprovider=sourceprovider;
+	this->type = type;
 }
 
 void ffmpegread::enter(const std::vector<sgstreamspec*> &in,const std::vector<std::string> &out)
@@ -32,7 +33,7 @@ void ffmpegread::enter(const std::vector<sgstreamspec*> &in,const std::vector<st
 	//needed!
 	ffmpeg::avdevice_register_all();
 
-	if (in.size()!=0 || out.size()!=1)
+	if (in.size()!=0 || (out.size()!=1 && out.size()!=2))
 		throw(sgraph::sgraphStreamException("invalid amount of in- or outstreams"));
 
 	if (this->sourceprovider!="")
@@ -46,34 +47,58 @@ void ffmpegread::enter(const std::vector<sgstreamspec*> &in,const std::vector<st
 	ffmpeg::av_dump_format(this->form_context, 0, this->sourcepath.c_str(), 0);
 
 	ffmpeg::AVCodecContext *audiocontext=0, *videocontext=0;
-	this->video_stream_index = ffmpeg::av_find_best_stream(this->form_context, ffmpeg::AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0);
-	if(this->video_stream_index >= 0)
+	if (out.size()==2 || this->type=="video" || this->type=="mixed")
 	{
-		videocontext = this->form_context->streams[this->video_stream_index]->codec;
+		this->video_stream_index = ffmpeg::av_find_best_stream(this->form_context, ffmpeg::AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0);
+		if(this->video_stream_index >= 0)
+		{
+			videocontext = this->form_context->streams[this->video_stream_index]->codec;
+		}
 	}
 
-	this->audio_stream_index = ffmpeg::av_find_best_stream(this->form_context, ffmpeg::AVMEDIA_TYPE_AUDIO, -1, -1, NULL, 0);
-	if(this->audio_stream_index >= 0)
+	if (out.size()==2 || this->type=="audio" || this->type=="mixed")
 	{
-		audiocontext = this->form_context->streams[this->audio_stream_index]->codec;
+		this->audio_stream_index = ffmpeg::av_find_best_stream(this->form_context, ffmpeg::AVMEDIA_TYPE_AUDIO, -1, -1, NULL, 0);
+		if(this->audio_stream_index >= 0)
+		{
+			audiocontext = this->form_context->streams[this->audio_stream_index]->codec;
+		}
 	}
-
-	this->getManager()->updateStreamspec(out[0], new spec_ffmpeg_packet(false, videocontext, audiocontext));
+	if (out.size()==1)
+		this->getManager()->updateStreamspec(out[0], new spec_ffmpeg_packet(false, videocontext, audiocontext));
+	else
+	{
+		this->getManager()->updateStreamspec(out[0], new spec_ffmpeg_packet(false, videocontext, 0));
+		this->getManager()->updateStreamspec(out[0], new spec_ffmpeg_packet(false, 0, audiocontext));
+	}
 	this->intern_thread=new std::thread(sgactor::thread_wrapper, this);
 }
 void ffmpegread::run(const std::vector<std::shared_ptr<sgstream>> )
 {
 	ffmpeg::av_init_packet(&this->packet);
-	if (ffmpeg::av_read_frame(this->form_context, &this->packet)<0)
-		return;
-	while(this->packet.stream_index!=this->video_stream_index && this->packet.stream_index!=this->audio_stream_index)
+	this->gotvideo=false;
+	this->gotaudio=false;
+	while((this->video_stream_index>=0 && this->gotvideo==false) && (this->audio_stream_index>=0 && this->gotaudio==false))
 	{
-		if (ffmpeg::av_read_frame(this->form_context, &this->packet)<0)
+		if (ffmpeg::av_read_frame(this->form_context, &this->packet)<0 || this->packet.stream_index<0)
 		{
+			ffmpeg::av_packet_unref(&this->packet);
 			return;
 		}
+		if (this->packet.stream_index==this->video_stream_index)
+		{
+			this->streamsout[0]->updateStream(new stream_ffmpeg_packet(&this->packet));
+			this->gotvideo=true;
+		}
+		if (this->packet.stream_index==this->audio_stream_index)
+		{
+			if (this->streamsout.size()==2)
+				this->streamsout[1]->updateStream(new stream_ffmpeg_packet(&this->packet));
+			else
+				this->streamsout[0]->updateStream(new stream_ffmpeg_packet(&this->packet));
+			this->gotaudio=true;
+		}
 	}
-	this->streamsout[0]->updateStream(new stream_ffmpeg_packet(&this->packet));
 	ffmpeg::av_packet_unref(&this->packet);
 }
 void ffmpegread::leave()

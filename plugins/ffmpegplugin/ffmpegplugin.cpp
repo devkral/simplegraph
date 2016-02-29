@@ -17,9 +17,13 @@ sgraph::sgactor *create_pluginactor(const double freq, const int64_t blocking, c
 		{
 			return static_cast<sgraph::sgactor*>(new sgraph::ffmpegread(freq, blocking, args[1]));
 		}
-		else
+		else if (args.size()==2)
 		{
 			return static_cast<sgraph::sgactor*>(new sgraph::ffmpegread(freq, blocking, args[1], args[2]));
+		}
+		else if (args.size() >= 3)
+		{
+			return static_cast<sgraph::sgactor*>(new sgraph::ffmpegread(freq, blocking, args[1], args[2], args[3]));
 		}
 	} else if (args[0]=="write")
 	{
