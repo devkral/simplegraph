@@ -7,6 +7,7 @@
 #include <iostream>
 #include <string>
 #include <tuple>
+#include <map>
 
 #if _WIN32|_WIN64
 #include <windows.h>
@@ -29,82 +30,172 @@ const char _filesysdelimiter = '/';
 #endif
 */
 
-const size_t find_comment(const std::string &inp, size_t startpos=0, size_t limitpos=std::string::npos)
+const size_t find_token(const std::string &inp, char token)
 {
 	bool isopen=false;
-	size_t pos=startpos, poscomment;
-	poscomment=inp.find_first_of('#', pos);
-	pos=inp.find_first_of('"', pos);
-	while (pos<limitpos)
+	bool isignore=false;
+	for (size_t count=0; count<inp.size(); count++)
 	{
-		if (!isopen)
+		if (isignore)
 		{
-			if (poscomment<pos)
-				return poscomment;
-			poscomment=inp.find_first_of('#', pos);
+			isignore=false;
+			continue;
 		}
-		isopen = (false==isopen);
-
-		pos=inp.find_first_of('"', pos+1);
+		if (inp[count]=='\\')
+		{
+			isignore=true;
+			continue;
+		}
+		if (inp[count]=='"')
+		{
+			if (isopen==false)
+			{
+				isopen=true;
+				continue;
+			}
+			else
+			{
+				isopen=false;
+				continue;
+			}
+		}
+		// " handler takes care
+		if (isopen==true)
+			continue;
+		if (inp[count]==token)
+		{
+			return count;
+		}
 	}
-	return limitpos;
+	return std::string::npos;
 }
 
 
-const std::tuple<std::string, size_t> string_split_single(const std::string &inp, size_t startpos=0, size_t limitpos=std::string::npos)
+const size_t find_comment(const std::string &inp)
 {
-	size_t first=startpos,last=0;
-	first=inp.find_first_of('"', first);
-	if (first>=limitpos)
+	return find_token(inp, '#');
+}
+
+const size_t find_split(const std::string &inp)
+{
+	return find_token(inp, ':');
+}
+
+const std::string strip(const std::string &inp)
+{
+	
+	if (inp.size()==0)
 	{
-		return std::tuple<std::string, size_t>("", std::string::npos);
+		return inp;
+	}
+	size_t first=0,last=0;
+	for (first=0; first<inp.size(); first++)
+	{
+		if (isblank(inp[first]) == false)
+			break;
 	}
 	
-	if (inp.at(first-1)=='\\')
+	for (last=inp.size()-1; first>=0; last--)
 	{
-		std::cerr << "Error: floating \\\" : \"" << inp << "\"" << std::endl;
-		return std::tuple<std::string, size_t>("", std::string::npos);
+		if (isblank(inp[last]) == false)
+			break;
 	}
-	//first += 1; // set to first character
-	last=inp.find_first_of('"', first+1);
-	while (last<limitpos && inp.at(last-1)=='\\')
-	{
-		last=inp.find_first_of('"', last+1);
-	}
-	if (last>=limitpos)
-	{
-		std::cerr << "Error: \" not closed: \"" << inp << "\"" << std::endl;
-		return std::tuple<std::string, size_t>("", std::string::npos);
-	}
-	else if (last==first+1)
-	{
-		return std::tuple<std::string, size_t>("", last+1);
-	}
-	return std::tuple<std::string, size_t>(inp.substr(first+1, (last-1)-first), last+1);
+	// +1 to get last char
+	return inp.substr(first,last-first+1);
 }
 
-const std::vector<std::string> string_split_multiple(const std::string &inp, size_t startpos=0, size_t limitpos=std::string::npos)
+const std::string strip_paragraphs(const std::string &inp)
+{
+	if (inp[0] == '"' && inp[inp.length()-1] == '"')
+	{
+		/**for (size_t count=1; count < inp.length()-2; count++)
+		{
+			//contains " because of multiple args, so break and abort
+			if (inp[count] == '"')
+			{
+				return inp;
+			}
+		}*/
+		return inp.substr(1, inp.length()-2);
+	}
+	return inp;
+}
+
+const std::vector<std::string> parse_args(const std::string &inp)
 {
 	std::vector<std::string> ret;
-	size_t pos=startpos;
-	std::tuple<std::string, size_t> temp = string_split_single(inp, pos, limitpos);
-	while (std::get<1>(temp)<limitpos)
+	bool isopen=false;
+	bool istoken=false;
+	bool isignore=false;
+	size_t last=0;
+	for (size_t count=0; count<inp.size();count++)
 	{
-		pos = std::get<1>(temp);
-		ret.push_back(std::get<0>(temp));
-		temp = string_split_single(inp, pos, limitpos);
+		if (isignore)
+		{
+			isignore=false;
+			continue;
+		}
+		if (inp[count]=='\\')
+		{
+			isignore=true;
+			continue;
+		}
+		// use tokenhandler if istoken
+		if (inp[count]=='"' && istoken==false)
+		{
+			if (isopen==false)
+			{
+				isopen=true;
+				last=count+1;
+				continue;
+			}
+			else
+			{
+				ret.push_back(inp.substr(last, count-last));
+				isopen=false;
+				continue;
+			}
+		}
+		// " handler cares ignore other methods of token
+		if (isopen==true)
+			continue;
+		
+		if (isblank(inp[count])==false && istoken==false)
+		{
+			istoken=true;
+			last=count;
+		}else if(isblank(inp[count])==true && istoken==true)
+		{
+			ret.push_back(inp.substr(last, count-last));
+			istoken=false;
+		}
+	}
+	if (istoken==true)
+		ret.push_back(inp.substr(last));
+	if (isopen==true)
+	{
+		std::cerr << "Unterminated string in config detected: " << inp << std::endl;
 	}
 	return ret;
 }
 
+const std::tuple<std::string, std::vector<std::string>> parse_line(const std::string &line)
+{
+	std::string searchstring = line.substr(0, find_comment(line));
+	size_t splitpos=find_split(searchstring);
+	std::string name = strip_paragraphs(strip(searchstring.substr(0, splitpos)));
+	if (splitpos==std::string::npos)
+		return std::tuple<std::string, std::vector<std::string>>(name, std::vector<std::string>());
+	std::vector<std::string> margs = parse_args(searchstring.substr(splitpos+1));
+	return std::tuple<std::string, std::vector<std::string>>(name, margs);
+}
 
 
 
-
-sgactor *loadActor(const std::string &path, const double &freq, const int64_t &blocking, const std::vector<std::string> &args)
+sgactor *loadActor(const std::string &path, const std::map<std::string, std::vector<std::string>> &args)
 {
 	void *soplugin=0;
-	typedef sgactor* (*init_sgnewactor_type) (const double, const int64_t, const std::vector<std::string> );
+	typedef sgactor* (*init_sgnewactor_type) (const std::map<std::string, std::vector<std::string>>);
 	void *sgnewactor=0;
 	sgactor *ret=0;
 #if _WIN32|_WIN64
@@ -139,7 +230,7 @@ sgactor *loadActor(const std::string &path, const double &freq, const int64_t &b
 	else
 	{
 		init_sgnewactor_type sgnewactor2 = reinterpret_cast<init_sgnewactor_type>(reinterpret_cast<uint64_t>(sgnewactor));
-		ret = (sgnewactor2)(freq, blocking, args);
+		ret = (sgnewactor2)(args);
 	}
 #if _WIN32|_WIN64
 	FreeLibrary(soplugin);
@@ -158,7 +249,7 @@ public:
 	~pluginmanager();
 	pluginmanager();
 	void parsefile(const std::string &filepath);
-	bool addPlugin(const std::string &name, const std::string &path, const double &freq, const int64_t &blocking, const std::vector<std::string> &args, const std::vector<std::string> &instreams, const std::vector<std::string> &outstreams);
+	bool addPlugin(const std::map<std::string, std::vector<std::string>> args);
 	void start();
 	void pause();
 

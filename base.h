@@ -19,6 +19,9 @@
 
 namespace sgraph{
 
+extern const std::vector<std::string> default_value_map(const std::map<std::string, std::vector<std::string>> &ma, const std::string key, const std::vector<std::string> _default=std::vector<std::string>());
+
+extern const std::vector<std::string> default_value_map(const std::map<std::string, std::vector<std::string>> &ma, const std::string key, const std::string _default);
 
 class sgstream;
 class sgstreamspec;
@@ -26,17 +29,20 @@ class sgactor;
 class sgmanager;
 
 
+
+
 class StopStreamspec : public std::exception{};
 
 
 
 class sgraphException : public std::exception{
+private:
 	std::string reasonstr;
 
 public:
 	sgraphException(std::string reason) : std::exception()
 	{
-		this->reasonstr=reason;
+		this->reasonstr=""+reason;
 	}
 	virtual ~sgraphException(){}
 

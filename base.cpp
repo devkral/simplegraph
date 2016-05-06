@@ -3,6 +3,20 @@
 
 #include <iostream>
 namespace sgraph{
+const std::vector<std::string> default_value_map(const std::map<std::string,std::vector<std::string>> &ma, const std::string key, const std::vector<std::string> _default)
+{
+	try{
+		return ma.at(key);
+	}catch (const std::out_of_range& oor) {
+		return _default;
+	}
+};
+
+
+const std::vector<std::string> default_value_map(const std::map<std::string,std::vector<std::string>> &ma, const std::string key, const std::string _default)
+{
+	return default_value_map(ma, key, std::vector<std::string>({_default}));
+}
 
 
 void sgmanager::start(const std::set<std::string> actornames)

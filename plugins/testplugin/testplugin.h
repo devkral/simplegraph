@@ -55,7 +55,7 @@ public:
 
 };
 
-extern "C" sgraph::sgactor* create_pluginactor(const double freq, const int64_t blocking, const std::vector<std::string> args);
+extern "C" sgraph::sgactor* create_pluginactor(const std::map<std::string,std::vector<std::string>> args);
 
 
 #endif

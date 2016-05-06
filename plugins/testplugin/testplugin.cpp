@@ -88,16 +88,19 @@ void testconsumer::leave()
 
 
 
-sgraph::sgactor *create_pluginactor(const double freq, const int64_t blocking, const std::vector<std::string> args)
+sgraph::sgactor *create_pluginactor(const std::map<std::string,std::vector<std::string>> args)
 {
-
-	if (args[0]=="provider")
+	std::string type = sgraph::default_value_map(args, "type", "")[0];
+	double freq = stod(sgraph::default_value_map(args, "freq", "1")[0]);
+	int64_t blocking = stoi(sgraph::default_value_map(args, "blocking", "-1")[0]);
+	
+	if (type=="provider")
 	{
 		return static_cast<sgraph::sgactor*>(new testprovider(freq, blocking));
-	}else if (args[0]=="transformer")
+	}else if (type=="transformer")
 	{
 		return static_cast<sgraph::sgactor*>(new testtransformer(freq, blocking));
-	}else if (args[0]=="consumer")
+	}else if (type=="consumer")
 	{
 		return static_cast<sgraph::sgactor*>(new testconsumer(freq, blocking));
 	}

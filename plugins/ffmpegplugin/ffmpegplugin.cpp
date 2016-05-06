@@ -4,16 +4,15 @@
 #include <iostream>
 #include <string>
 
-sgraph::sgactor *create_pluginactor(const double freq, const int64_t blocking, const std::vector<std::string> args)
+
+sgraph::sgactor *create_pluginactor(const std::map<std::string,std::vector<std::string>> args)
 {
-	if (args.size()==0)
+	std::string type = sgraph::default_value_map(args, "type", "")[0];
+	double freq = stod(sgraph::default_value_map(args, "freq", "1")[0]);
+	int64_t blocking = stoi(sgraph::default_value_map(args, "blocking", "-1")[0]);
+	if (type=="read")
 	{
-		std::cerr << "Too few arguments" << std::endl;
-		return 0;
-	}
-	if (args[0]=="read")
-	{
-		if (args.size()==1)
+/**		if (args.size()==1)
 		{
 			return static_cast<sgraph::sgactor*>(new sgraph::ffmpegread(freq, blocking, args[1]));
 		}
@@ -24,9 +23,10 @@ sgraph::sgactor *create_pluginactor(const double freq, const int64_t blocking, c
 		else if (args.size() >= 3)
 		{
 			return static_cast<sgraph::sgactor*>(new sgraph::ffmpegread(freq, blocking, args[1], args[2], args[3]));
-		}
-	} else if (args[0]=="write")
+		}*/
+	} else if (type=="write")
 	{
+	/*
 		if (args.size()==1)
 		{
 			return static_cast<sgraph::sgactor*>(new sgraph::ffmpegwrite(freq, blocking, args[1]));
@@ -34,7 +34,7 @@ sgraph::sgactor *create_pluginactor(const double freq, const int64_t blocking, c
 		else
 		{
 			return static_cast<sgraph::sgactor*>(new sgraph::ffmpegwrite(freq, blocking, args[1], args[2]));
-		}
+		}*/
 	}
 	return 0;
 }

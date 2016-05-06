@@ -19,6 +19,7 @@ pluginmanager::~pluginmanager()
 	std::cout << "simplegraph cleaned up" << std::endl;
 }
 
+
 void pluginmanager::parsefile(const std::string &filepath)
 {
 	if (filepath=="")
@@ -29,14 +30,10 @@ void pluginmanager::parsefile(const std::string &filepath)
 	stream.open(filepath);
 	std::string line;
 	uint8_t foundline=0;
-	uint8_t loglevel=0;
-	double freq=1.0;
-	int64_t blocking=0;
-	bool debug_initialized=false;
-	size_t limitpos;
-	std::string name, path;
-	std::vector<std::string> args, instreams, outstreams;
-	std::tuple<std::string,size_t> tempret;
+	
+	std::map<std::string, std::vector<std::string>> tmargs;
+	
+	std::tuple<std::string, std::vector<std::string>> parsed_line;
 	if (stream.is_open())
 	{
 		std::cout << "\"" << filepath << "\" loaded" << std::endl;
@@ -45,110 +42,69 @@ void pluginmanager::parsefile(const std::string &filepath)
 	while (stream.is_open() && stream.eof()==false)
 	{
 		std::getline(stream, line);
-		limitpos = find_comment(line);
-		if (foundline==0 && line.find("module:")<limitpos)
+		parsed_line = parse_line(line);
+		if (std::get<0>(parsed_line).length()==0 && std::get<1>(parsed_line).size()==0)
+			continue;
+		if(foundline>=1 && (std::get<0>(parsed_line) == "debug" || std::get<0>(parsed_line) == "module"))
 		{
-			tempret = string_split_single(line,line.find("module:")+7,limitpos);
-			name = std::get<0>(tempret);
+			//path = (std::string)"plugins"+_filesysdelimiter+name+_filesysdelimiter+"lib"+name+_libraryending;
+			
+			if (foundline==1)
+			{
+				this->addPlugin(tmargs);
+			}
+			else
+			{
+				sgactor *dgactor=new debugactor(atoi(default_value_map(tmargs, "loglevel", "0")[0].c_str()));
+				this->manager->addActor(default_value_map(tmargs, "name", "debug").at(0),
+					dgactor,
+					default_value_map(tmargs, "instreams"),
+					default_value_map(tmargs, "outstreams"));
+			}
+		
+			tmargs.clear();
+			foundline=0;
+		}
+		
+		if (std::get<0>(parsed_line) == "module")
+		{
+			tmargs["name"] = std::get<1>(parsed_line);
 			foundline=1;
-		}else if (foundline==0 && line.find("debug:")<limitpos && debug_initialized==false)
+		}else if (std::get<0>(parsed_line) == "debug")
 		{
-			//name = "debug";
+			tmargs["name"] = std::get<1>(parsed_line);
 			foundline=2;
-		}else if(foundline==1 && line.find("debug:")<limitpos)
+		}else
 		{
-			if (path!="")
-			{
-				//path = (std::string)"plugins"+_filesysdelimiter+name+_filesysdelimiter+"lib"+name+_libraryending;
-			
-				this->addPlugin(name, path,freq,blocking, args, instreams, outstreams);
-			}
-			path="";
-			freq=1.0;
-			blocking=-1;
-			args.clear();
-			instreams.clear();
-			outstreams.clear();
-			if (debug_initialized==false)
-			{
-				foundline=2;
-			}
-		
+			tmargs[std::get<0>(parsed_line)] = std::get<1>(parsed_line);
 		}
-		else if(foundline>=1 && line.find("module:")<limitpos)
-		{
-			if (path!="")
-			{
-				//path = (std::string)"plugins"+_filesysdelimiter+name+_filesysdelimiter+"lib"+name+_libraryending;
-			
-				this->addPlugin(name, path,freq,blocking, args, instreams, outstreams);
-			}else if(foundline==2 && debug_initialized==false)
-			{
-				sgactor *dgactor=new debugactor(loglevel);
-				this->manager->addActor("debug", dgactor,instreams, outstreams);
-				debug_initialized=true;
-			}
-			tempret = string_split_single(line,line.find("module:")+7,limitpos);
-			name = std::get<0>(tempret);
-			path="";
-			freq=1.0;
-			blocking=-1;
-			args.clear();
-			instreams.clear();
-			outstreams.clear();
-			foundline=1;
-		}else if(foundline==1 && line.find("blocking=")<limitpos)
-		{
-			tempret = string_split_single(line,line.find("blocking=")+9,limitpos);
-			blocking = std::stol(std::get<0>(tempret));
-		}else if(foundline==1 && line.find("frequency=")<limitpos)
-		{
-			tempret = string_split_single(line,line.find("frequency=")+10,limitpos);
-			freq = std::stod(std::get<0>(tempret));
-		}else if(foundline==1 && line.find("path=")<limitpos)
-		{
-			tempret = string_split_single(line,line.find("path=")+5,limitpos);
-			path = std::get<0>(tempret);
-		}else if(foundline==1 && line.find("args=")<limitpos)
-		{
-			args = string_split_multiple(line, line.find("args=")+5,limitpos);
-		}else if(foundline>=1 && line.find("instreams=")<limitpos)
-		{
-			instreams = string_split_multiple(line, line.find("instreams=")+10,limitpos);
-		}else if(foundline==1 && line.find("outstreams=")<limitpos)
-		{
-			outstreams = string_split_multiple(line, line.find("outstreams=")+11,limitpos);
-		}else if(foundline==2 && line.find("loglevel=")<limitpos)
-		{
-			tempret = string_split_single(line,line.find("loglevel=")+9,limitpos);
-			loglevel = std::stoi(std::get<0>(tempret));
-		}
-
-		
-		
 	}
 	stream.close();
 	// add last module, which isn't terminated by module:
 	if (foundline==1)
 	{
-		this->addPlugin(name, path,freq,blocking, args, instreams, outstreams);
+		this->addPlugin(tmargs);
 	}
-	if (foundline==2 && debug_initialized==false)
+	if (foundline==2)
 	{
-		sgactor *dgactor=new debugactor(loglevel);
-		this->manager->addActor("debug", dgactor,instreams, outstreams);
-		debug_initialized=true;
+		sgactor *dgactor=new debugactor(atoi(default_value_map(tmargs, "loglevel", "0")[0].c_str()));
+		this->manager->addActor(default_value_map(tmargs, "name", "debug").at(0),
+			dgactor,
+			default_value_map(tmargs, "instreams"),
+			default_value_map(tmargs, "outstreams"));
 	}
 }
-bool pluginmanager::addPlugin(const std::string &name, const std::string &path,  const double &freq, const int64_t &blocking, const std::vector<std::string> &args, const std::vector<std::string> &instreams, const std::vector<std::string> &outstreams)
+bool pluginmanager::addPlugin(const std::map<std::string, std::vector<std::string>> tmargs)
 {
-	sgactor *actor = loadActor(path,freq,blocking, args);
+	sgactor *actor = loadActor(tmargs.at("path")[0], tmargs);
 	if (actor == 0)
 	{
-	
 		return false;
 	}
-	this->manager->addActor(name, actor, instreams, outstreams);
+	this->manager->addActor(tmargs.at("name")[0],
+		actor,
+		default_value_map(tmargs, "instreams"),
+		default_value_map(tmargs, "outstreams"));
 	return true;
 }
 
@@ -171,7 +127,7 @@ int main(int argc, char *argv[])
 		try{
 			pluman.parsefile(argv[count]);
 		}
-		catch(std::exception &e)
+		catch(sgraph::sgraphException &e)
 		{
 			std::cerr << "Caught exception:" << std::endl;
 			std::cerr << e.what() << std::endl;
@@ -182,7 +138,7 @@ int main(int argc, char *argv[])
 	try{
 		pluman.start();
 	}
-	catch(std::exception &e)
+	catch(sgraph::sgraphException &e)
 	{
 		std::cerr << "Caught exception:" << std::endl;
 		std::cerr << e.what() << std::endl;
