@@ -171,7 +171,9 @@ const std::vector<std::string> parse_args(const std::string &inp)
 		}
 	}
 	if (istoken==true)
+	{
 		ret.push_back(inp.substr(last));
+	}
 	if (isopen==true)
 	{
 		std::cerr << "Unterminated string in config detected: " << inp << std::endl;
