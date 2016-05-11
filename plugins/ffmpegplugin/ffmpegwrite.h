@@ -13,8 +13,8 @@ class ffmpegwrite : public sgactor{
 protected:
 	std::string outsink;
 	std::string outformat;
-	ffmpeg::AVPacket packet;
-	ffmpeg::AVFormatContext *form_context=0;
+	AVPacket packet;
+	AVFormatContext *form_context=0;
 	int got_frame=0;
 	int video_stream_index=-1;
 	int audio_stream_index=-1;

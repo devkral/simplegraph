@@ -15,8 +15,8 @@ class ffmpegread : public sgactor{
 protected:
 	std::string sourcepath,sourceprovider,type;
 	//AVInputFormat *input_device_format=0;
-	ffmpeg::AVPacket packet;
-	ffmpeg::AVFormatContext *form_context=0;
+	AVPacket packet;
+	AVFormatContext *form_context=0;
 	int got_frame=0;
 	int video_stream_index=-1;
 	int audio_stream_index=-1;

@@ -23,6 +23,8 @@ extern const std::vector<std::string> default_value_map(const std::map<std::stri
 
 extern const std::vector<std::string> default_value_map(const std::map<std::string, std::vector<std::string>> &ma, const std::string key, const std::string _default);
 
+typedef std::chrono::steady_clock::time_point sgactor_time_point;
+
 class sgstream;
 class sgstreamspec;
 class sgactor;
@@ -103,7 +105,6 @@ public:
 
 class sgactor{
 private:
-	std::chrono::steady_clock::time_point time_previous;
 	sgmanager* manager; // don't delete
 	std::timed_mutex time_lock;
 	bool is_pausing=true; // start paused
@@ -119,9 +120,10 @@ protected:
 	std::vector<sgstreamspec*> streamsout;
 
 	static void thread_wrapper(sgactor *t, uint32_t threadid){
+		sgactor_time_point time_previous=std::chrono::steady_clock::now();
 		while (t->active == true)
 		{
-			t->step(threadid);
+			t->step(time_previous, threadid);
 		}
 	}
 	virtual void init_threads();
@@ -152,8 +154,7 @@ public:
 	virtual void enter(const std::vector<sgstreamspec*> &in,const std::vector<std::string> &out)=0;
 	virtual void run(const std::vector<std::shared_ptr<sgstream>> in)=0;
 	virtual void leave(){}
-	void step(uint32_t threadid=0);
-
+	void step(sgactor_time_point &time_previous, uint32_t threadid=0);
 };
 
 }

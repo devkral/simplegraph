@@ -3,8 +3,6 @@
 #define FFMPEGPLUGINBASE_H
 
 
-namespace ffmpeg
-{
 extern "C"
 {
 //#include <libavutil/opt.h>
@@ -19,7 +17,7 @@ extern "C"
 #include <libavutil/imgutils.h>
 //#include <libavutil/samplefmt.h>
 }
-}
+
 
 #include "base.h"
 #include "basespecs.h"
@@ -29,19 +27,19 @@ namespace sgraph{
 
 class stream_ffmpeg_packet : public sgstream{
 public:
-	ffmpeg::AVPacket packet;
+	AVPacket packet;
 
-	stream_ffmpeg_packet(ffmpeg::AVPacket *packet);
+	stream_ffmpeg_packet(AVPacket *packet);
 	~stream_ffmpeg_packet();
 
 };
 
 class spec_ffmpeg_packet : public sgstreamspec{
 public:
-	ffmpeg::AVCodecContext *audiocontext=0, *videocontext=0;
-	ffmpeg::AVCodec *audiocodec=0, *videocodec=0;
+	AVCodecContext *audiocontext=0, *videocontext=0;
+	AVCodec *audiocodec=0, *videocodec=0;
 	bool encode=false;
-	spec_ffmpeg_packet(bool encode, ffmpeg::AVCodecContext *videocontext, ffmpeg::AVCodecContext *audiocontext);
+	spec_ffmpeg_packet(bool encode, AVCodecContext *videocontext, AVCodecContext *audiocontext);
 	~spec_ffmpeg_packet();
 };
 
@@ -62,7 +60,7 @@ public:
 
 class spec_ffmpeg_image : public spec_image{
 public:
-	spec_ffmpeg_image(ffmpeg::AVCodecContext *cod_context, uint8_t channels);
+	spec_ffmpeg_image(AVCodecContext *cod_context, uint8_t channels);
 
 };
 

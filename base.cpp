@@ -223,7 +223,6 @@ sgactor::sgactor(double freq, int64_t blockingtime)
 	{
 		this->time_sleep = std::chrono::nanoseconds((int64_t)(-1.0L*freq));
 	}
-	this->time_previous = std::chrono::steady_clock::now();
 }
 
 void sgactor::pause()
@@ -326,23 +325,24 @@ void sgactor::init_threads()
 	}
 }
 
-void sgactor::step(uint32_t threadid){
+// time_previous will be changed
+void sgactor::step(sgactor_time_point &time_previous, uint32_t threadid){
 	//this->active=this->manager->interrupt_thread(this);
 	int32_t threads_temp;
 	this->pause_lock.lock();
 	if (this->is_pausing)
 	{
 		this->pause_cond.wait(this->pause_lock);
-		threads_temp = this->threads;
+		time_previous=std::chrono::steady_clock::now()+this->time_sleep*threadid;
 	}
+	threads_temp = this->threads;
 	this->pause_lock.unlock();
 	if (!this->active)
 	{
 		return;
 	}
 	auto tstart =  std::chrono::steady_clock::now();
-	// TODO: use threadid>0 and threads_temp for calculating timeslot
-	auto tosleep = this->time_sleep-(tstart-this->time_previous);
+	auto tosleep = this->time_sleep*threads_temp-(tstart-time_previous);
 	if (tosleep>std::chrono::nanoseconds(0))
 	{
 		if (this->time_lock.try_lock_for(std::chrono::duration_cast<std::chrono::nanoseconds> (tosleep)))
@@ -374,7 +374,7 @@ void sgactor::step(uint32_t threadid){
 		return;
 	}
 	
-	this->time_previous = std::chrono::steady_clock::now();
+	time_previous=std::chrono::steady_clock::now();
 	//this->transform(sgactor, std::forward(sgactor));
 }
 

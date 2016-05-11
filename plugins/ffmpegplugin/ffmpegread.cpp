@@ -28,29 +28,29 @@ ffmpegread::ffmpegread(double freq, int64_t blocking, std::string sourcepath, st
 void ffmpegread::enter(const std::vector<sgstreamspec*> &in,const std::vector<std::string> &out)
 {
 	int errorno;
-	ffmpeg::av_register_all();
+	av_register_all();
 	//needed!
-	ffmpeg::avcodec_register_all();
+	avcodec_register_all();
 	//needed!
-	ffmpeg::avdevice_register_all();
+	avdevice_register_all();
 
 	if (in.size()!=0 || (out.size()!=1 && out.size()!=2))
 		throw(sgraph::sgraphStreamException("invalid amount of in- or outstreams"));
 
 	if (this->sourceprovider!="")
-		errorno =  ffmpeg::avformat_open_input (&this->form_context, this->sourcepath.c_str(), ffmpeg::av_find_input_format(this->sourceprovider.c_str()), NULL);
+		errorno =  avformat_open_input (&this->form_context, this->sourcepath.c_str(), av_find_input_format(this->sourceprovider.c_str()), NULL);
 	else
-		errorno =  ffmpeg::avformat_open_input (&this->form_context, this->sourcepath.c_str(), NULL, NULL);
+		errorno =  avformat_open_input (&this->form_context, this->sourcepath.c_str(), NULL, NULL);
 	if (errorno<0)
 	{
 		throw(sgraphException("Error: opening file failed"));
 	}
-	ffmpeg::av_dump_format(this->form_context, 0, this->sourcepath.c_str(), 0);
+	av_dump_format(this->form_context, 0, this->sourcepath.c_str(), 0);
 
-	ffmpeg::AVCodecContext *audiocontext=0, *videocontext=0;
+	AVCodecContext *audiocontext=0, *videocontext=0;
 	if (out.size()==2 || this->type=="video" || this->type=="mixed")
 	{
-		this->video_stream_index = ffmpeg::av_find_best_stream(this->form_context, ffmpeg::AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0);
+		this->video_stream_index = av_find_best_stream(this->form_context, AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0);
 		if(this->video_stream_index >= 0)
 		{
 			videocontext = this->form_context->streams[this->video_stream_index]->codec;
@@ -59,7 +59,7 @@ void ffmpegread::enter(const std::vector<sgstreamspec*> &in,const std::vector<st
 
 	if (out.size()==2 || this->type=="audio" || this->type=="mixed")
 	{
-		this->audio_stream_index = ffmpeg::av_find_best_stream(this->form_context, ffmpeg::AVMEDIA_TYPE_AUDIO, -1, -1, NULL, 0);
+		this->audio_stream_index = av_find_best_stream(this->form_context, AVMEDIA_TYPE_AUDIO, -1, -1, NULL, 0);
 		if(this->audio_stream_index >= 0)
 		{
 			audiocontext = this->form_context->streams[this->audio_stream_index]->codec;
@@ -75,14 +75,14 @@ void ffmpegread::enter(const std::vector<sgstreamspec*> &in,const std::vector<st
 }
 void ffmpegread::run(const std::vector<std::shared_ptr<sgstream>> )
 {
-	ffmpeg::av_init_packet(&this->packet);
+	av_init_packet(&this->packet);
 	this->gotvideo=false;
 	this->gotaudio=false;
 	while((this->video_stream_index>=0 && this->gotvideo==false) && (this->audio_stream_index>=0 && this->gotaudio==false))
 	{
-		if (ffmpeg::av_read_frame(this->form_context, &this->packet)<0 || this->packet.stream_index<0)
+		if (av_read_frame(this->form_context, &this->packet)<0 || this->packet.stream_index<0)
 		{
-			ffmpeg::av_packet_unref(&this->packet);
+			av_packet_unref(&this->packet);
 			return;
 		}
 		if (this->packet.stream_index==this->video_stream_index)
@@ -99,7 +99,7 @@ void ffmpegread::run(const std::vector<std::shared_ptr<sgstream>> )
 			this->gotaudio=true;
 		}
 	}
-	ffmpeg::av_packet_unref(&this->packet);
+	av_packet_unref(&this->packet);
 }
 void ffmpegread::leave()
 {
@@ -110,7 +110,7 @@ ffmpegread::~ffmpegread()
 {
 	if (this->form_context)
 	{
-		ffmpeg::avformat_close_input (&this->form_context);
+		avformat_close_input (&this->form_context);
 	}
 }
 }

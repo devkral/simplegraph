@@ -29,8 +29,8 @@ ffmpegwrite::ffmpegwrite(double freq, int64_t blocking, std::string outsink, std
 void ffmpegwrite::enter(const std::vector<sgstreamspec*> &in,const std::vector<std::string> &out)
 {
 	int error;
-	ffmpeg::av_register_all();
-	ffmpeg::avdevice_register_all();
+	av_register_all();
+	avdevice_register_all();
 	if (in.size()!=1 || out.size()!=0)
 		throw(sgraph::sgraphStreamException("outstreams specified"));
 	if (this->outformat=="")
@@ -51,7 +51,7 @@ void ffmpegwrite::enter(const std::vector<sgstreamspec*> &in,const std::vector<s
 void ffmpegwrite::run(const std::vector<std::shared_ptr<sgstream>> in)
 {
 	stream_ffmpeg_packet *temp = (stream_ffmpeg_packet*)in[0].get();
-	ffmpeg::av_interleaved_write_frame(this->form_context, &temp->packet);
+	av_interleaved_write_frame(this->form_context, &temp->packet);
 
 }
 void ffmpegwrite::leave()
@@ -62,7 +62,7 @@ void ffmpegwrite::leave()
 ffmpegwrite::~ffmpegwrite()
 {
 	if (this->form_context)
-		ffmpeg::avformat_free_context (this->form_context);
+		avformat_free_context (this->form_context);
 }
 
 
