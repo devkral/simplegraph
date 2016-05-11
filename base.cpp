@@ -189,7 +189,7 @@ std::shared_ptr<sgstream> sgstreamspec::getStream(int64_t blockingtime)
 		this->updating_finished.wait(this->protaccess);
 	}else if (blockingtime>0)
 	{
-		if (this->updating_finished.wait_for(this->protaccess, std::chrono::nanoseconds(blockingtime)) == std::cv_status::timeout)
+		if (this->updating_finished.wait_for(this->protaccess, sgtimeunit(blockingtime)) == std::cv_status::timeout)
 		{
 			this->protaccess.unlock();
 			return std::shared_ptr<sgstream> (0);
@@ -220,13 +220,13 @@ sgactor::sgactor(const double freq, const int64_t blockingtime, const int32_t pa
 	this->time_lock.lock();
 	if (freq>0)
 	{
-		this->time_sleep = std::chrono::nanoseconds((int64_t)(1000000000.0L/freq));
+		this->time_sleep = sgtimeunit((int64_t)((double)sgtimeunit_second/freq));
 	}else if (freq==0) // special case to ensure real zero
 	{
-		this->time_sleep = std::chrono::nanoseconds(0);
+		this->time_sleep = sgtimeunit(0);
 	}else
 	{
-		this->time_sleep = std::chrono::nanoseconds((int64_t)(-1.0L*freq));
+		this->time_sleep = sgtimeunit((int64_t)(-1.0L*freq));
 	}
 }
 
@@ -240,6 +240,7 @@ void sgactor::pause()
 void sgactor::start()
 {
 	this->global_time_previous=std::chrono::steady_clock::now()-this->time_sleep*this->threads;
+	this->adaptcount=0;
 	this->pause_lock.lock();
 	this->is_pausing = false;
 	this->pause_lock.unlock();
@@ -359,20 +360,21 @@ void sgactor::step(uint32_t threadid){
 	// (sleep time)-(past time since last time_previous)
 	//auto tosleep = this->time_sleep*threads_temp-(tstart-time_previous-threadid*this->time_sleep);
 	auto tosleep = this->time_sleep*(threads_temp+threadid)-(tstart-this->global_time_previous);
-	if (tosleep>std::chrono::nanoseconds(0))
+	if (tosleep > sgtimeunit(0))
 	{
-		if (this->time_lock.try_lock_for(std::chrono::duration_cast<std::chrono::nanoseconds> (tosleep)))
+		if (this->time_lock.try_lock_for(std::chrono::duration_cast<sgtimeunit> (tosleep)))
 		{
 			return;
 		}
 	}
-	else if (this->parallelize <= 0 && this->time_sleep > std::chrono::nanoseconds(0))
+	else if (this->parallelize <= 0 && this->time_sleep > sgtimeunit(0))
 	{
 		this->pause_lock.lock();
 		// calculate, check that integer does not overflow
 		if (this->threads*-2>-2147483648 && (this->parallelize == 0 || this->parallelize>-this->threads*2))
 		{
 			this->start_new_thread();
+			threads_temp++;
 		}
 		this->pause_lock.unlock();
 	}
@@ -391,8 +393,17 @@ void sgactor::step(uint32_t threadid){
 	}
 	if (threadid==0)
 	{
+		auto tend =  std::chrono::steady_clock::now();
 		this->pause_lock.lock();
-		this->global_time_previous=std::chrono::steady_clock::now();
+		if (this->adaptcount<1 && tend-tstart>this->time_sleep)
+		{
+			this->global_time_previous = tend-this->time_sleep/2;
+			this->adaptcount++;
+
+		}else
+		{
+			this->global_time_previous = tend;
+		}
 		this->pause_lock.unlock();
 	}
 	//this->transform(sgactor, std::forward(sgactor));

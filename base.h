@@ -15,7 +15,7 @@
 #include <chrono>
 #include <string>
 #include <set>
-
+#include <iostream>
 
 namespace sgraph{
 
@@ -24,6 +24,8 @@ extern const std::vector<std::string> default_value_map(const std::map<std::stri
 extern const std::vector<std::string> default_value_map(const std::map<std::string, std::vector<std::string>> &ma, const std::string key, const std::string _default);
 
 typedef std::chrono::steady_clock::time_point sgactor_time_point;
+typedef std::chrono::nanoseconds sgtimeunit;
+const int64_t sgtimeunit_second=1000000000L;
 
 class sgstream;
 class sgstreamspec;
@@ -111,6 +113,7 @@ private:
 	bool is_pausing=true; // start paused
 	int32_t parallelize=1; // 0 adapt, >0 fix amount, <0 set start amount and limit to the double of start amount
 	uint32_t threads=0; // thread count
+	int32_t adaptcount=0;
 	std::mutex pause_lock, stop_lock;
 	std::condition_variable_any pause_cond;
 	std::vector<sgstreamspec*> streamsin;
@@ -127,7 +130,7 @@ protected:
 	virtual void init_threads();
 	virtual void start_new_thread();
 	int64_t blockingtime;
-	std::chrono::nanoseconds time_sleep;
+	sgtimeunit time_sleep;
 	const std::vector<std::shared_ptr<sgstream>> getStreams(bool do_block=false);
 	std::string name;
 	
@@ -136,7 +139,7 @@ protected:
 
 public:
 	virtual ~sgactor(){}
-	// blocking time: -1 wait infinitely for an update, 0 (default) take current element, >0 wait <nanoseconds> for update, return elsewise NULL
+	// blocking time: -1 wait infinitely for an update, 0 (default) take current element, >0 wait <sgtimeunit> for update, return elsewise NULL
 	// parallelize
 	sgactor(const double freq, const int64_t blockingtime, const int32_t parallelize);
 	void stop();
