@@ -353,7 +353,7 @@ void sgactor::step(sgactor_time_point &time_previous, uint32_t threadid){
 			return;
 		}
 	}
-	else if (this->parallelize <= 0 && this->time_sleep>std::chrono::nanoseconds(0))
+	else if (this->parallelize <= 0 && this->time_sleep > std::chrono::nanoseconds(0))
 	{
 		this->pause_lock.lock();
 		// calculate, check that integer does not overflow
