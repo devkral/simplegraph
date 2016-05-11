@@ -70,7 +70,7 @@ protected:
 	void deleteStreamspecs(const std::set<std::string> specnames);
 public:
 	virtual ~sgmanager(){this->deleteActors();}
-	std::vector<sgstreamspec*> getStreamspecs(const std::vector<std::string> &streamnames);
+	const std::vector<sgstreamspec*> getStreamspecs(const std::vector<std::string> &streamnames);
 	std::vector<sgactor*> getActors(const std::vector<std::string> &actornames);
 	void updateStreamspec(const std::string &name, sgstreamspec* obj);
 	void addActor(const std::string &name, sgactor *actor, const std::vector<std::string> &streamnamesin, const std::vector<std::string> &streamnamesout);
@@ -107,30 +107,28 @@ class sgactor{
 private:
 	sgmanager* manager; // don't delete
 	std::timed_mutex time_lock;
+	sgactor_time_point global_time_previous;
 	bool is_pausing=true; // start paused
 	int32_t parallelize=1; // 0 adapt, >0 fix amount, <0 set start amount and limit to the double of start amount
 	uint32_t threads=0; // thread count
 	std::mutex pause_lock, stop_lock;
 	std::condition_variable_any pause_cond;
 	std::vector<sgstreamspec*> streamsin;
-	std::vector<std::shared_ptr<sgstream>> _tretgetStreams;
-	std::vector<std::future<std::shared_ptr<sgstream>>> _thandlesgetStreams;
 protected:
 	std::vector<std::thread> intern_threads;
 	std::vector<sgstreamspec*> streamsout;
 
 	static void thread_wrapper(sgactor *t, uint32_t threadid){
-		sgactor_time_point time_previous=std::chrono::steady_clock::now();
 		while (t->active == true)
 		{
-			t->step(time_previous, threadid);
+			t->step(threadid);
 		}
 	}
 	virtual void init_threads();
 	virtual void start_new_thread();
 	int64_t blockingtime;
 	std::chrono::nanoseconds time_sleep;
-	std::vector<std::shared_ptr<sgstream>> getStreams(bool do_block=false);
+	const std::vector<std::shared_ptr<sgstream>> getStreams(bool do_block=false);
 	std::string name;
 	
 	std::set<std::string> owned_instreams;
@@ -155,7 +153,7 @@ public:
 	virtual void enter(const std::vector<sgstreamspec*> &in,const std::vector<std::string> &out)=0;
 	virtual void run(const std::vector<std::shared_ptr<sgstream>> in)=0;
 	virtual void leave(){}
-	void step(sgactor_time_point &time_previous, uint32_t threadid=0);
+	void step(uint32_t threadid=0);
 };
 
 }

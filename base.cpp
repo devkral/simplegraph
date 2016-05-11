@@ -48,32 +48,34 @@ void sgmanager::updateStreamspec(const std::string &name, sgstreamspec* obj)
 	this->streamdict.at(name).reset(obj);
 }
 
-std::vector<sgraph::sgstreamspec*> sgmanager::getStreamspecs(const std::vector<std::string> &streamnames)
+const std::vector<sgraph::sgstreamspec*> sgmanager::getStreamspecs(const std::vector<std::string> &streamnames)
 {
-	std::vector<sgstreamspec*> ret;
-	ret.reserve(streamnames.size());
-	for (std::string elem: streamnames)
+	std::vector<sgstreamspec*> ret(streamnames.size());
+	for (size_t count=0; count<streamnames.size(); count++)
 	{
-		if (this->streamdict.count(elem)==0)
+		try
 		{
-			throw(sgraphException("Stream: \""+elem+"\" is missing"));
+			ret[count]=this->streamdict.at(streamnames[count]).get();
+		}catch(std::out_of_range)
+		{
+			throw(sgraphException("Stream: \""+streamnames[count]+"\" is missing"));
 		}
-		ret.emplace_back(this->streamdict.at(elem).get());
 	}
 	return ret;
 }
 
 std::vector<sgactor*> sgmanager::getActors(const std::vector<std::string> &actornames)
 {
-	std::vector<sgactor*> ret;
-	ret.reserve(actornames.size());
-	for (std::string elem: actornames)
+	std::vector<sgactor*> ret(actornames.size());
+	for (size_t count=0; count<actornames.size(); count++)
 	{
-		if (this->actordict.count(elem)==0)
+		try
 		{
-			throw(sgraphException("Actor: \""+elem+"\" is missing"));
+			ret[count]=this->actordict.at(actornames[count]).get();
+		}catch(std::out_of_range)
+		{
+			throw(sgraphException("Actor: \""+actornames[count]+"\" is missing"));
 		}
-		ret.emplace_back(this->actordict.at(elem).get());
 	}
 	return ret;
 
@@ -164,7 +166,6 @@ void sgstreamspec::updateStream(sgstream* streamob)
 	this->stream = std::shared_ptr<sgstream> (streamob);
 	this->protaccess.unlock();
 	updating_finished.notify_all();
-	
 }
 void sgstreamspec::stop()
 {
@@ -215,6 +216,7 @@ sgactor::sgactor(const double freq, const int64_t blockingtime, const int32_t pa
 {
 	this->blockingtime = blockingtime;
 	this->parallelize = parallelize;
+	this->global_time_previous=std::chrono::steady_clock::now()-this->time_sleep*this->threads;
 	this->time_lock.lock();
 	if (freq>0)
 	{
@@ -237,6 +239,7 @@ void sgactor::pause()
 }
 void sgactor::start()
 {
+	this->global_time_previous=std::chrono::steady_clock::now()-this->time_sleep*this->threads;
 	this->pause_lock.lock();
 	this->is_pausing = false;
 	this->pause_lock.unlock();
@@ -249,9 +252,16 @@ void sgactor::stop()
 	this->active=false;
 	this->time_lock.unlock();
 	this->pause_cond.notify_all();
-	if (this->intern_threads.size()>0)
+	while (this->intern_threads.size()>0)
 	{
-		this->intern_threads.back().join();
+		try
+		{
+			this->intern_threads.back().join();
+		} catch (...)
+		{
+			//do nothing
+		}
+
 		this->intern_threads.pop_back();
 	}
 	this->leave();
@@ -274,16 +284,16 @@ std::shared_ptr<sgstream> getStreamhelper(sgstreamspec *t, int64_t blockingtime)
 	return t->getStream(blockingtime);
 }
 
-std::vector<std::shared_ptr<sgstream>> sgactor::getStreams(bool do_block)
+const std::vector<std::shared_ptr<sgstream>> sgactor::getStreams(bool do_block)
 {
+	std::vector<std::shared_ptr<sgstream>> _tretgetStreams(this->streamsin.size());
+	std::vector<std::future<std::shared_ptr<sgstream>>> _thandlesgetStreams(this->streamsin.size());
 	// shortcut when no input stream is available
 	if (this->streamsin.size()>0)
 	{
-		this->_tretgetStreams.clear();
-		this->_thandlesgetStreams.clear();
-		for (sgstreamspec* elem: this->streamsin)
+		for (size_t count=0; count<this->streamsin.size(); count++)
 		{
-			if (elem==0)
+			if (this->streamsin[count]==0)
 			{
 				throw(sgraphStreamException("stream in: \""+this->getName()+"\" is uninitialized"));
 				// stops when using deleted stream
@@ -291,17 +301,17 @@ std::vector<std::shared_ptr<sgstream>> sgactor::getStreams(bool do_block)
 			}
 			if (do_block==true)
 			{
-				_thandlesgetStreams.emplace_back(std::async(std::launch::async, getStreamhelper, elem, -1));
+				_thandlesgetStreams[count]=std::async(std::launch::async, getStreamhelper, this->streamsin[count], -1);
 			}else
 			{
-				_thandlesgetStreams.emplace_back(std::async(std::launch::async, getStreamhelper, elem, this->blockingtime));
+				_thandlesgetStreams[count]=std::async(std::launch::async, getStreamhelper, this->streamsin[count], this->blockingtime);
 			}
 		}
 
-		for (std::future<std::shared_ptr<sgstream>> &elem: _thandlesgetStreams)
+		for (size_t count=0; count<_thandlesgetStreams.size(); count++)
 		{
-			elem.wait();
-			_tretgetStreams.emplace_back(elem.get());
+			_thandlesgetStreams[count].wait();
+			_tretgetStreams[count]=_thandlesgetStreams[count].get();
 		}
 	}
 	return _tretgetStreams;
@@ -329,23 +339,26 @@ void sgactor::init_threads()
 }
 
 // time_previous will be changed
-void sgactor::step(sgactor_time_point &time_previous, uint32_t threadid){
+void sgactor::step(uint32_t threadid){
 	//this->active=this->manager->interrupt_thread(this);
-	int32_t threads_temp;
+	uint32_t threads_temp;
 	this->pause_lock.lock();
 	if (this->is_pausing)
 	{
 		this->pause_cond.wait(this->pause_lock);
-		time_previous=std::chrono::steady_clock::now()+this->time_sleep*threadid;
 	}
-	threads_temp = this->threads;
+	threads_temp=this->threads;
 	this->pause_lock.unlock();
 	if (!this->active)
 	{
 		return;
 	}
 	auto tstart =  std::chrono::steady_clock::now();
-	auto tosleep = this->time_sleep*threads_temp-(tstart-time_previous);
+	// subtract difference from slot from sleep time
+	// if slot is missed, parallelize if not fixed
+	// (sleep time)-(past time since last time_previous)
+	//auto tosleep = this->time_sleep*threads_temp-(tstart-time_previous-threadid*this->time_sleep);
+	auto tosleep = this->time_sleep*(threads_temp+threadid)-(tstart-this->global_time_previous);
 	if (tosleep>std::chrono::nanoseconds(0))
 	{
 		if (this->time_lock.try_lock_for(std::chrono::duration_cast<std::chrono::nanoseconds> (tosleep)))
@@ -372,12 +385,16 @@ void sgactor::step(sgactor_time_point &time_previous, uint32_t threadid){
 	}catch(sgraphStreamException &e)
 	{
 		//std::cerr << "Stream not initialized, stop actor:" << std::endl;
-		std::cerr << " " << e.what() << std::endl;
+		std::cerr <<  e.what() << std::endl;
 		this->stop();
 		return;
 	}
-	
-	time_previous=std::chrono::steady_clock::now();
+	if (threadid==0)
+	{
+		this->pause_lock.lock();
+		this->global_time_previous=std::chrono::steady_clock::now();
+		this->pause_lock.unlock();
+	}
 	//this->transform(sgactor, std::forward(sgactor));
 }
 
@@ -388,8 +405,6 @@ void sgactor::init(const std::string &name, sgmanager *manager, const std::vecto
 	this->owned_instreams.insert(streamnamesin.begin(), streamnamesin.end());
 	this->owned_outstreams.insert(streamnamesout.begin(), streamnamesout.end());
 	this->streamsin = manager->getStreamspecs(streamnamesin);
-	this->_tretgetStreams = std::vector<std::shared_ptr<sgstream>> (this->streamsin.size());
-	this->_thandlesgetStreams = std::vector<std::future<std::shared_ptr<sgstream>>> (this->streamsin.size());
 	this->enter(this->streamsin, streamnamesout);
 	this->init_threads();
 	this->streamsout = manager->getStreamspecs(streamnamesout);

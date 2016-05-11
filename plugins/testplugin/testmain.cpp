@@ -19,7 +19,7 @@ int main()
 	ac3streamsin.push_back("stream2");
 	
 	man.addActor("provider",new testprovider(1,1,1), ac1streamsin, ac1streamsout);
-	man.addActor("transformer",new testtransformer(1,-1,1), ac2streamsin, ac2streamsout);
+	man.addActor("transformer",new testtransformer(1,-1,4), ac2streamsin, ac2streamsout);
 	man.addActor("consumer",new testconsumer(1,1000000000,1), ac3streamsin, ac3streamsout);
 	
 	std::vector<std::string> actorsretrieve;
@@ -28,7 +28,7 @@ int main()
 	actorsretrieve.push_back("consumer");
 	for (sgraph::sgactor* actor : man.getActors(actorsretrieve))
 	{
-		std::cout << "Actorname:" << actor->getName() << std::endl;
+		std::cout << "Actorname: " << actor->getName() << std::endl;
 	
 	}
 	man.start();
