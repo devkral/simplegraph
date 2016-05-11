@@ -12,8 +12,6 @@ void testprovider::enter(const std::vector<sgraph::sgstreamspec*> &in, const std
 		this->getManager()->updateStreamspec(elem, new teststreamspec());
 	}
 	std::cout << "Name: " << this->getName() << std::endl;
-	this->intern_thread=new std::thread(sgraph::sgactor::thread_wrapper, this);
-	
 }
 
 void testprovider::run(std::vector<std::shared_ptr<sgraph::sgstream>> in)
@@ -31,7 +29,10 @@ void testtransformer::enter(const std::vector<sgraph::sgstreamspec*> &in, const 
 {
 	std::cout << "transformer consumes:" << *this->getInstreams().begin() << std::endl;
 	if (in.size()!=1 || (out.size()!=2 && out.size()!=1 ))
+	{
+		std::cerr << "transformer " << in.size() << " " << out.size() << std::endl;
 		throw(sgraph::sgraphStreamException("invalid amount of in- or outstreams"));
+	}
 	std::cout << "transformer inits:" << out[0] << std::endl;
 	this->getManager()->updateStreamspec(out[0], new teststreamspec());
 
@@ -43,7 +44,6 @@ void testtransformer::enter(const std::vector<sgraph::sgstreamspec*> &in, const 
 		
 	}
 	std::cout << "Name: " << this->getName() << std::endl;
-	this->intern_thread=new std::thread(sgraph::sgactor::thread_wrapper, this);
 }
 
 void testtransformer::run(std::vector<std::shared_ptr<sgraph::sgstream>> in)
@@ -71,7 +71,6 @@ void testconsumer::enter(const std::vector<sgraph::sgstreamspec*> &in, const std
 		throw(sgraph::sgraphStreamException("invalid amount of in- or outstreams"));
 	
 	std::cout << "Name: " << this->getName() << std::endl;
-	this->intern_thread=new std::thread(sgraph::sgactor::thread_wrapper, this);
 }
 
 void testconsumer::run(std::vector<std::shared_ptr<sgraph::sgstream>> in)

@@ -3,6 +3,7 @@
 #include <iostream>
 #include <cstring>
 #include <exception>
+
 #include "ffmpegwrite.h"
 
 namespace sgraph{
@@ -46,8 +47,6 @@ void ffmpegwrite::enter(const std::vector<sgstreamspec*> &in,const std::vector<s
 	if (error < 0) {
 		throw(sgraph::sgraphStreamException("Error occurred when opening output file"));
 	}
-
-	this->intern_thread=new std::thread(sgactor::thread_wrapper, this);
 }
 void ffmpegwrite::run(const std::vector<std::shared_ptr<sgstream>> in)
 {

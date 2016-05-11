@@ -238,7 +238,7 @@ void sgactor::start()
 	this->pause_lock.lock();
 	this->is_pausing = false;
 	this->pause_lock.unlock();
-	this->pause_cond.notify_one(); // should be only one
+	this->pause_cond.notify_all(); // multiple threads possible
 }
 void sgactor::stop()
 {
@@ -247,10 +247,10 @@ void sgactor::stop()
 	this->active=false;
 	this->time_lock.unlock();
 	this->pause_cond.notify_all();
-	if (this->intern_thread)
+	if (this->intern_threads.size()>0)
 	{
-		this->intern_thread->join();
-		delete this->intern_thread;
+		this->intern_threads.back().join();
+		this->intern_threads.pop_back();
 	}
 	this->leave();
 	for (sgstreamspec* elem: this->streamsout)
@@ -305,8 +305,12 @@ std::vector<std::shared_ptr<sgstream>> sgactor::getStreams(bool do_block)
 	return _tretgetStreams;
 }
 
+void sgactor::start_threads()
+{
+	this->intern_threads.push_back(std::thread(sgraph::sgactor::thread_wrapper, this, 0));
+}
 
-void sgactor::step(){
+void sgactor::step(uint32_t threadid){
 	//this->active=this->manager->interrupt_thread(this);
 	
 	this->pause_lock.lock();
@@ -320,6 +324,8 @@ void sgactor::step(){
 		return;
 	}
 	auto tstart =  std::chrono::steady_clock::now();
+	// TODO: use threadid>0 and parallelize for calculating timeslot
+	// TODO: needs mutex in case parallelize changes
 	auto tosleep = this->time_sleep-(tstart-this->time_previous);
 	if (tosleep>std::chrono::nanoseconds(0))
 	{
@@ -327,6 +333,10 @@ void sgactor::step(){
 		{
 			return;
 		}
+	}
+	else if (this->parallelize<=0)
+	{
+		// TODO: add thread, needs mutex
 	}
 	try{
 		this->run(this->getStreams());
@@ -356,6 +366,7 @@ void sgactor::init(const std::string &name, sgmanager *manager, const std::vecto
 	this->_tretgetStreams = std::vector<std::shared_ptr<sgstream>> (this->streamsin.size());
 	this->_thandlesgetStreams = std::vector<std::future<std::shared_ptr<sgstream>>> (this->streamsin.size());
 	this->enter(this->streamsin, streamnamesout);
+	this->start_threads();
 	this->streamsout = manager->getStreamspecs(streamnamesout);
 }
 

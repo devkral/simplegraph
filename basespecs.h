@@ -2,8 +2,9 @@
 	
 #ifndef SGBASESPECS_H
 #define SGBASESPECS_H
+
+
 #include "base.h"
-#include <iostream>
 
 //#include <cstdlib>
 
@@ -17,12 +18,10 @@ public:
 	{
 		this->ptr=ptr;
 		this->size=size;
-		std::cerr << "init\n";
 	}
 	~stream_data()
 	{
 		free(this->ptr);
-		std::cerr << "freed\n";
 	}
 
 };

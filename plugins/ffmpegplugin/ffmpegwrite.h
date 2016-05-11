@@ -1,6 +1,8 @@
 
 #ifndef FFMPEGVIDEOWRITE_H
 #define FFMPEGVIDEOWRITE_H
+
+
 #include "ffmpegpluginbase.h"
 
 

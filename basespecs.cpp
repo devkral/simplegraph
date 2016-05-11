@@ -1,7 +1,9 @@
 
-#include "basespecs.h"
 
 #include <iostream>
+
+#include "basespecs.h"
+
 
 namespace sgraph{
 
@@ -23,9 +25,6 @@ void debugactor::enter(const std::vector<sgstreamspec*> &in,const std::vector<st
 			throw(sgraphStreamException("stream"));
 		}
 	}*/ // getStreams should protect already
-	this->intern_thread=new std::thread(sgraph::sgactor::thread_wrapper, this);
-	
-
 }
 void debugactor::run(const std::vector<std::shared_ptr<sgstream>> in)
 {

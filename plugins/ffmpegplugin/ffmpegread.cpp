@@ -2,6 +2,7 @@
 #include <thread>
 #include <iostream>
 #include <exception>
+
 #include "ffmpegread.h"
 
 namespace sgraph{
@@ -71,7 +72,6 @@ void ffmpegread::enter(const std::vector<sgstreamspec*> &in,const std::vector<st
 		this->getManager()->updateStreamspec(out[0], new spec_ffmpeg_packet(false, videocontext, 0));
 		this->getManager()->updateStreamspec(out[0], new spec_ffmpeg_packet(false, 0, audiocontext));
 	}
-	this->intern_thread=new std::thread(sgactor::thread_wrapper, this);
 }
 void ffmpegread::run(const std::vector<std::shared_ptr<sgstream>> )
 {

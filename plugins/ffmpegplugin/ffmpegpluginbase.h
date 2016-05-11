@@ -2,8 +2,6 @@
 #ifndef FFMPEGPLUGINBASE_H
 #define FFMPEGPLUGINBASE_H
 
-#include "base.h"
-#include "basespecs.h"
 
 namespace ffmpeg
 {
@@ -22,6 +20,10 @@ extern "C"
 //#include <libavutil/samplefmt.h>
 }
 }
+
+#include "base.h"
+#include "basespecs.h"
+
 
 namespace sgraph{
 

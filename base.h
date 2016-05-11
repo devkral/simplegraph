@@ -107,21 +107,24 @@ private:
 	sgmanager* manager; // don't delete
 	std::timed_mutex time_lock;
 	bool is_pausing=true; // start paused
+	int32_t parallelize=1; // 0 adapt, >0 fix amount, <0 set start amount
+	uint32_t threads=0; // 0 adapt, >0 fix amount, <0 set start amount
 	std::mutex pause_lock, stop_lock;
 	std::condition_variable_any pause_cond;
 	std::vector<sgstreamspec*> streamsin;
 	std::vector<std::shared_ptr<sgstream>> _tretgetStreams;
 	std::vector<std::future<std::shared_ptr<sgstream>>> _thandlesgetStreams;
 protected:
-	std::thread *intern_thread=0;
+	std::vector<std::thread> intern_threads;
 	std::vector<sgstreamspec*> streamsout;
 
-	static void thread_wrapper(sgactor *t){
+	static void thread_wrapper(sgactor *t, uint32_t threadid){
 		while (t->active == true)
 		{
-			t->step();
+			t->step(threadid);
 		}
 	}
+	virtual void start_threads();
 	int64_t blockingtime;
 	std::chrono::nanoseconds time_sleep;
 	std::vector<std::shared_ptr<sgstream>> getStreams(bool do_block=false);
@@ -148,7 +151,7 @@ public:
 	virtual void enter(const std::vector<sgstreamspec*> &in,const std::vector<std::string> &out)=0;
 	virtual void run(const std::vector<std::shared_ptr<sgstream>> in)=0;
 	virtual void leave(){}
-	void step();
+	void step(uint32_t threadid=0);
 
 };
 
