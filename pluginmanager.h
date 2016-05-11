@@ -95,7 +95,8 @@ const std::string strip(const std::string &inp)
 			break;
 	}
 	
-	for (last=inp.size()-1; first>=0; last--)
+	// unsigned so move 0 to 1
+	for (last=inp.size()-1; last+1>=1; last--)
 	{
 		if (isblank(inp[last]) == false)
 			break;
