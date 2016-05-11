@@ -305,18 +305,35 @@ std::vector<std::shared_ptr<sgstream>> sgactor::getStreams(bool do_block)
 	return _tretgetStreams;
 }
 
-void sgactor::start_threads()
+void sgactor::start_new_thread()
 {
-	this->intern_threads.push_back(std::thread(sgraph::sgactor::thread_wrapper, this, 0));
+	this->threads+=1;
+	this->intern_threads.push_back(std::thread(sgraph::sgactor::thread_wrapper, this, this->threads-1));
+}
+
+void sgactor::init_threads()
+{
+	this->threads=0;
+	this->start_new_thread();
+	int32_t parallelize_temp=this->parallelize;
+	if (parallelize_temp<0)
+	{
+		parallelize_temp = -parallelize_temp;
+	}
+	for (int32_t count=1;count<parallelize_temp; count++)
+	{
+		this->start_new_thread();
+	}
 }
 
 void sgactor::step(uint32_t threadid){
 	//this->active=this->manager->interrupt_thread(this);
-	
+	int32_t threads_temp;
 	this->pause_lock.lock();
 	if (this->is_pausing)
 	{
 		this->pause_cond.wait(this->pause_lock);
+		threads_temp = this->threads;
 	}
 	this->pause_lock.unlock();
 	if (!this->active)
@@ -324,8 +341,7 @@ void sgactor::step(uint32_t threadid){
 		return;
 	}
 	auto tstart =  std::chrono::steady_clock::now();
-	// TODO: use threadid>0 and parallelize for calculating timeslot
-	// TODO: needs mutex in case parallelize changes
+	// TODO: use threadid>0 and threads_temp for calculating timeslot
 	auto tosleep = this->time_sleep-(tstart-this->time_previous);
 	if (tosleep>std::chrono::nanoseconds(0))
 	{
@@ -334,9 +350,15 @@ void sgactor::step(uint32_t threadid){
 			return;
 		}
 	}
-	else if (this->parallelize<=0)
+	else if (this->parallelize <= 0)
 	{
-		// TODO: add thread, needs mutex
+		this->pause_lock.lock();
+		// calculate
+		if (this->parallelize == 0 || this->parallelize>-this->threads*2)
+		{
+			this->start_new_thread();
+		}
+		this->pause_lock.unlock();
 	}
 	try{
 		this->run(this->getStreams());
@@ -366,7 +388,7 @@ void sgactor::init(const std::string &name, sgmanager *manager, const std::vecto
 	this->_tretgetStreams = std::vector<std::shared_ptr<sgstream>> (this->streamsin.size());
 	this->_thandlesgetStreams = std::vector<std::future<std::shared_ptr<sgstream>>> (this->streamsin.size());
 	this->enter(this->streamsin, streamnamesout);
-	this->start_threads();
+	this->init_threads();
 	this->streamsout = manager->getStreamspecs(streamnamesout);
 }
 

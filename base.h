@@ -107,8 +107,8 @@ private:
 	sgmanager* manager; // don't delete
 	std::timed_mutex time_lock;
 	bool is_pausing=true; // start paused
-	int32_t parallelize=1; // 0 adapt, >0 fix amount, <0 set start amount
-	uint32_t threads=0; // 0 adapt, >0 fix amount, <0 set start amount
+	int32_t parallelize=1; // 0 adapt, >0 fix amount, <0 set start amount and limit to the double of start amount
+	uint32_t threads=0; // thread count
 	std::mutex pause_lock, stop_lock;
 	std::condition_variable_any pause_cond;
 	std::vector<sgstreamspec*> streamsin;
@@ -124,7 +124,8 @@ protected:
 			t->step(threadid);
 		}
 	}
-	virtual void start_threads();
+	virtual void init_threads();
+	virtual void start_new_thread();
 	int64_t blockingtime;
 	std::chrono::nanoseconds time_sleep;
 	std::vector<std::shared_ptr<sgstream>> getStreams(bool do_block=false);
