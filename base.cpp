@@ -211,15 +211,18 @@ std::shared_ptr<sgstream> sgstreamspec::getStream(int64_t blockingtime)
 
 
 
-sgactor::sgactor(double freq, int64_t blockingtime)
+sgactor::sgactor(const double freq, const int64_t blockingtime, const int32_t parallelize)
 {
 	this->blockingtime = blockingtime;
+	this->parallelize = parallelize;
 	this->time_lock.lock();
 	if (freq>0)
 	{
 		this->time_sleep = std::chrono::nanoseconds((int64_t)(1000000000.0L/freq));
-	}
-	else
+	}else if (freq==0) // special case to ensure real zero
+	{
+		this->time_sleep = std::chrono::nanoseconds(0);
+	}else
 	{
 		this->time_sleep = std::chrono::nanoseconds((int64_t)(-1.0L*freq));
 	}
@@ -350,11 +353,11 @@ void sgactor::step(sgactor_time_point &time_previous, uint32_t threadid){
 			return;
 		}
 	}
-	else if (this->parallelize <= 0)
+	else if (this->parallelize <= 0 && this->time_sleep>std::chrono::nanoseconds(0))
 	{
 		this->pause_lock.lock();
-		// calculate
-		if (this->parallelize == 0 || this->parallelize>-this->threads*2)
+		// calculate, check that integer does not overflow
+		if (this->threads*-2>-2147483648 && (this->parallelize == 0 || this->parallelize>-this->threads*2))
 		{
 			this->start_new_thread();
 		}

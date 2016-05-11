@@ -18,7 +18,7 @@ namespace sgraph{
 
 
 
-ffmpegread::ffmpegread(double freq, int64_t blocking, std::string sourcepath, std::string sourceprovider, std::string type): sgactor(freq, blocking)
+ffmpegread::ffmpegread(double freq, int64_t blocking, int32_t parallelize, std::string sourcepath, std::string sourceprovider, std::string type): sgactor(freq, blocking, parallelize)
 {
 	this->sourcepath=sourcepath;
 	this->sourceprovider=sourceprovider;

@@ -20,7 +20,7 @@ namespace sgraph{
 
 
 
-ffmpegwrite::ffmpegwrite(double freq, int64_t blocking, std::string outsink, std::string outformat): sgactor(freq, blocking)
+ffmpegwrite::ffmpegwrite(double freq, int64_t blocking, int32_t parallelize, std::string outsink, std::string outformat): sgactor(freq, blocking, parallelize)
 {
 	this->outsink=outsink;
 	this->outformat=outformat;

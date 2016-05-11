@@ -139,7 +139,8 @@ protected:
 public:
 	virtual ~sgactor(){}
 	// blocking time: -1 wait infinitely for an update, 0 (default) take current element, >0 wait <nanoseconds> for update, return elsewise NULL
-	sgactor(double freq, int64_t blockingtime);
+	// parallelize
+	sgactor(const double freq, const int64_t blockingtime, const int32_t parallelize);
 	void stop();
 	void start();
 	void pause();

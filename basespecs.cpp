@@ -9,7 +9,7 @@ namespace sgraph{
 
 
 
-debugactor::debugactor(uint8_t loglevel) : sgactor(0,-1) {
+debugactor::debugactor(uint8_t loglevel) : sgactor(0,-1, 1) {
 	this->loglevel=loglevel;
 }
 void debugactor::enter(const std::vector<sgstreamspec*> &in,const std::vector<std::string> &out)

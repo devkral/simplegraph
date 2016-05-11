@@ -92,16 +92,17 @@ sgraph::sgactor *create_pluginactor(const std::map<std::string,std::vector<std::
 	std::string type = sgraph::default_value_map(args, "type", "")[0];
 	double freq = stod(sgraph::default_value_map(args, "freq", "1")[0]);
 	int64_t blocking = stoi(sgraph::default_value_map(args, "blocking", "-1")[0]);
+	int32_t parallelize = stoi(sgraph::default_value_map(args, "parallelize", "1")[0]);
 	
 	if (type=="provider")
 	{
-		return static_cast<sgraph::sgactor*>(new testprovider(freq, blocking));
+		return static_cast<sgraph::sgactor*>(new testprovider(freq, blocking, parallelize));
 	}else if (type=="transformer")
 	{
-		return static_cast<sgraph::sgactor*>(new testtransformer(freq, blocking));
+		return static_cast<sgraph::sgactor*>(new testtransformer(freq, blocking, parallelize));
 	}else if (type=="consumer")
 	{
-		return static_cast<sgraph::sgactor*>(new testconsumer(freq, blocking));
+		return static_cast<sgraph::sgactor*>(new testconsumer(freq, blocking, parallelize));
 	}
 	else return 0;
 }
