@@ -240,7 +240,6 @@ void sgactor::pause()
 void sgactor::start()
 {
 	this->global_time_previous=std::chrono::steady_clock::now()-this->time_sleep*this->threads;
-	this->adaptcount=0;
 	this->pause_lock.lock();
 	this->is_pausing = false;
 	this->pause_lock.unlock();
@@ -386,7 +385,6 @@ void sgactor::step(uint32_t threadid){
 		return;
 	}catch(sgraphStreamException &e)
 	{
-		//std::cerr << "Stream not initialized, stop actor:" << std::endl;
 		std::cerr <<  e.what() << std::endl;
 		this->stop();
 		return;
@@ -395,15 +393,7 @@ void sgactor::step(uint32_t threadid){
 	{
 		auto tend =  std::chrono::steady_clock::now();
 		this->pause_lock.lock();
-		if (this->adaptcount<1 && tend-tstart>this->time_sleep)
-		{
-			this->global_time_previous = tend-this->time_sleep/2;
-			this->adaptcount++;
-
-		}else
-		{
-			this->global_time_previous = tend;
-		}
+		this->global_time_previous = tend;
 		this->pause_lock.unlock();
 	}
 	//this->transform(sgactor, std::forward(sgactor));

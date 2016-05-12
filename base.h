@@ -113,7 +113,6 @@ private:
 	bool is_pausing=true; // start paused
 	int32_t parallelize=1; // 0 adapt, >0 fix amount, <0 set start amount and limit to the double of start amount
 	uint32_t threads=0; // thread count
-	int32_t adaptcount=0;
 	std::mutex pause_lock, stop_lock;
 	std::condition_variable_any pause_cond;
 	std::vector<sgstreamspec*> streamsin;
