@@ -259,11 +259,11 @@ void sgactor::stop()
 		return;
 	this->is_active = false;
 	this->is_pausing = false;
-	this->pause_cond.notify_all();
 	// sync
 	this->sync_lock.lock();
 	this->sync_lock.unlock();
 	// unlock
+	this->pause_cond.notify_all();
 	for (size_t count=0; count < this->intern_threads_locks.size(); count++)
 	{
 		this->intern_threads_locks[count]->unlock();
