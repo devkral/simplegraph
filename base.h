@@ -71,7 +71,7 @@ private:
 protected:
 	void deleteStreamspecs(const std::set<std::string> specnames);
 public:
-	virtual ~sgmanager(){this->deleteActors();}
+	virtual ~sgmanager();
 	const std::vector<sgstreamspec*> getStreamspecs(const std::vector<std::string> &streamnames);
 	std::vector<sgactor*> getActors(const std::vector<std::string> &actornames);
 	void updateStreamspec(const std::string &name, sgstreamspec* obj);
@@ -91,7 +91,9 @@ public:
 class sgstreamspec{
 private:
 	std::recursive_mutex protaccess;
-	bool is_updating=false, is_stopping=false;
+	std::mutex stop_lock;
+	bool is_stopping = false;
+	bool is_uninitialized = true;
 	std::condition_variable_any updating_finished;
 	std::shared_ptr<sgstream> stream;
 	sgtime_point last_time;
@@ -99,7 +101,7 @@ private:
 public:
 	std::set<std::string> capabilities;
 	virtual ~sgstreamspec(){}
-	std::shared_ptr<sgstream> getStream(int64_t blockingtime, sgtimeunit mintimediff=sgtimeunit(0));
+	std::shared_ptr<sgstream> getStream(const int64_t &blockingtime, const sgtimeunit &mintimediff=sgtimeunit(0));
 	void updateStream(sgstream* streamob);
 	void stop();
 	bool stopping(){return this->is_stopping;}
@@ -111,9 +113,9 @@ private:
 	sgmanager* manager; // don't delete
 	std::timed_mutex time_lock;
 	sgtime_point global_time_previous;
-	bool is_pausing=true; // start paused
-	int32_t parallelize=1; // 0 adapt, >0 fix amount, <0 set start amount and limit to the double of start amount
-	uint32_t threads=0; // thread count
+	bool is_pausing = true; // start paused
+	int32_t parallelize = 1; // 0 adapt, >0 fix amount, <0 set start amount and limit to the double of start amount
+	uint32_t threads = 0; // thread count
 	std::mutex pause_lock, stop_lock;
 	std::condition_variable_any pause_cond;
 	std::vector<sgstreamspec*> streamsin;
@@ -131,7 +133,7 @@ protected:
 	virtual void start_new_thread();
 	int64_t blockingtime;
 	sgtimeunit time_sleep;
-	const std::vector<std::shared_ptr<sgstream>> getStreams(bool do_block=false, sgtimeunit mintimediff=sgtimeunit(0));
+	const std::vector<std::shared_ptr<sgstream>> getStreams(bool do_block=false, const sgtimeunit &mintimediff=sgtimeunit(0));
 	std::string name;
 	
 	std::set<std::string> owned_instreams;
@@ -141,7 +143,7 @@ public:
 	virtual ~sgactor(){}
 	// blocking time: -1 wait infinitely for an update, 0 (default) take current element, >0 wait <sgtimeunit> for update, return elsewise NULL
 	// parallelize
-	sgactor(const double freq, const int64_t blockingtime, const int32_t parallelize);
+	sgactor(const double &freq, const int64_t &blockingtime, const int32_t &parallelize);
 	void stop();
 	void start();
 	void pause();
