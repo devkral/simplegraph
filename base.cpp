@@ -164,6 +164,7 @@ void sgstreamspec::updateStream(sgstream* streamob)
 		return;
 	}
 	this->stream = std::shared_ptr<sgstream> (streamob);
+	this->last_time = std::chrono::steady_clock::now();
 	this->protaccess.unlock();
 	updating_finished.notify_all();
 }
@@ -174,7 +175,7 @@ void sgstreamspec::stop()
 	updating_finished.notify_all();
 }
 
-std::shared_ptr<sgstream> sgstreamspec::getStream(int64_t blockingtime)
+std::shared_ptr<sgstream> sgstreamspec::getStream(int64_t blockingtime, sgtimeunit mintimediff)
 {
 	std::shared_ptr<sgstream> ret;
 	if (this->is_stopping)
@@ -184,15 +185,20 @@ std::shared_ptr<sgstream> sgstreamspec::getStream(int64_t blockingtime)
 	}
 	this->protaccess.lock();
 	//std::unique_lock<std::recursive_mutex> lck(this->protaccess, std::adopt_lock);
-	if (blockingtime==-1)
+	// if below mintime
+	auto temp = std::chrono::steady_clock::now();
+	if (this->last_time+mintimediff<temp)
 	{
-		this->updating_finished.wait(this->protaccess);
-	}else if (blockingtime>0)
-	{
-		if (this->updating_finished.wait_for(this->protaccess, sgtimeunit(blockingtime)) == std::cv_status::timeout)
+		if (blockingtime==-1)
 		{
-			this->protaccess.unlock();
-			return std::shared_ptr<sgstream> (0);
+			this->updating_finished.wait(this->protaccess);
+		}else if (blockingtime>0)
+		{
+			if (this->updating_finished.wait_for(this->protaccess, sgtimeunit(blockingtime)) == std::cv_status::timeout)
+			{
+				this->protaccess.unlock();
+				return std::shared_ptr<sgstream> (0);
+			}
 		}
 	}
 	if (this->is_stopping)
@@ -279,12 +285,12 @@ void sgactor::stop()
 }
 
 
-std::shared_ptr<sgstream> getStreamhelper(sgstreamspec *t, int64_t blockingtime)
+std::shared_ptr<sgstream> getStreamhelper(sgstreamspec *t, int64_t blockingtime, sgtimeunit mintimediff)
 {
-	return t->getStream(blockingtime);
+	return t->getStream(blockingtime, mintimediff);
 }
 
-const std::vector<std::shared_ptr<sgstream>> sgactor::getStreams(bool do_block)
+const std::vector<std::shared_ptr<sgstream>> sgactor::getStreams(bool do_block, sgtimeunit mintimediff)
 {
 	std::vector<std::shared_ptr<sgstream>> _tretgetStreams(this->streamsin.size());
 	std::vector<std::future<std::shared_ptr<sgstream>>> _thandlesgetStreams(this->streamsin.size());
@@ -301,10 +307,10 @@ const std::vector<std::shared_ptr<sgstream>> sgactor::getStreams(bool do_block)
 			}
 			if (do_block==true)
 			{
-				_thandlesgetStreams[count]=std::async(std::launch::async, getStreamhelper, this->streamsin[count], -1);
+				_thandlesgetStreams[count]=std::async(std::launch::async, getStreamhelper, this->streamsin[count], -1, mintimediff);
 			}else
 			{
-				_thandlesgetStreams[count]=std::async(std::launch::async, getStreamhelper, this->streamsin[count], this->blockingtime);
+				_thandlesgetStreams[count]=std::async(std::launch::async, getStreamhelper, this->streamsin[count], this->blockingtime, mintimediff);
 			}
 		}
 
@@ -358,7 +364,8 @@ void sgactor::step(uint32_t threadid){
 	// if slot is missed, parallelize if not fixed
 	// (sleep time)-(past time since last time_previous)
 	//auto tosleep = this->time_sleep*threads_temp-(tstart-time_previous-threadid*this->time_sleep);
-	auto tosleep = this->time_sleep*(threads_temp+threadid)-(tstart-this->global_time_previous);
+	auto tempcalc = this->time_sleep*(threads_temp+threadid);
+	auto tosleep = tempcalc-(tstart-this->global_time_previous);
 	if (tosleep > sgtimeunit(0))
 	{
 		if (this->time_lock.try_lock_for(std::chrono::duration_cast<sgtimeunit> (tosleep)))
@@ -378,7 +385,7 @@ void sgactor::step(uint32_t threadid){
 		this->pause_lock.unlock();
 	}
 	try{
-		this->run(this->getStreams());
+		this->run(this->getStreams(false,this->time_sleep));
 	}catch(StopStreamspec &e)
 	{
 		this->stop();

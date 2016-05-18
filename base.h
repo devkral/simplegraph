@@ -23,7 +23,7 @@ extern const std::vector<std::string> default_value_map(const std::map<std::stri
 
 extern const std::vector<std::string> default_value_map(const std::map<std::string, std::vector<std::string>> &ma, const std::string key, const std::string _default);
 
-typedef std::chrono::steady_clock::time_point sgactor_time_point;
+typedef std::chrono::steady_clock::time_point sgtime_point;
 typedef std::chrono::nanoseconds sgtimeunit;
 const int64_t sgtimeunit_second=1000000000L;
 
@@ -94,11 +94,12 @@ private:
 	bool is_updating=false, is_stopping=false;
 	std::condition_variable_any updating_finished;
 	std::shared_ptr<sgstream> stream;
+	sgtime_point last_time;
 	//sgactor *owner;
 public:
 	std::set<std::string> capabilities;
 	virtual ~sgstreamspec(){}
-	std::shared_ptr<sgstream> getStream(int64_t blockingtime);
+	std::shared_ptr<sgstream> getStream(int64_t blockingtime, sgtimeunit mintimediff=sgtimeunit(0));
 	void updateStream(sgstream* streamob);
 	void stop();
 	bool stopping(){return this->is_stopping;}
@@ -109,7 +110,7 @@ class sgactor{
 private:
 	sgmanager* manager; // don't delete
 	std::timed_mutex time_lock;
-	sgactor_time_point global_time_previous;
+	sgtime_point global_time_previous;
 	bool is_pausing=true; // start paused
 	int32_t parallelize=1; // 0 adapt, >0 fix amount, <0 set start amount and limit to the double of start amount
 	uint32_t threads=0; // thread count
@@ -130,7 +131,7 @@ protected:
 	virtual void start_new_thread();
 	int64_t blockingtime;
 	sgtimeunit time_sleep;
-	const std::vector<std::shared_ptr<sgstream>> getStreams(bool do_block=false);
+	const std::vector<std::shared_ptr<sgstream>> getStreams(bool do_block=false, sgtimeunit mintimediff=sgtimeunit(0));
 	std::string name;
 	
 	std::set<std::string> owned_instreams;
