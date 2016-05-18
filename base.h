@@ -90,20 +90,19 @@ public:
 class sgstreamspec{
 private:
 	std::recursive_mutex protaccess;
-	std::mutex stop_lock;
-	bool is_stopping = false;
 	bool is_uninitialized = true;
 	std::condition_variable_any updating_finished;
 	std::shared_ptr<sgstream> stream;
 	sgtime_point last_time;
-	//sgactor *owner;
+protected:
+	bool is_active = true;
 public:
 	std::set<std::string> capabilities;
 	virtual ~sgstreamspec(){}
 	std::shared_ptr<sgstream> getStream(const int64_t &blockingtime, const sgtimeunit &mintimediff=sgtimeunit(0));
 	void updateStream(sgstream* streamob);
 	void stop();
-	bool stopping(){return this->is_stopping;}
+	bool active(){return this->is_active;}
 };
 
 
@@ -114,16 +113,18 @@ private:
 	bool is_pausing = true; // start paused
 	int32_t parallelize = 1; // 0 adapt, >0 fix amount, <0 set start amount and limit to the double of start amount
 	uint32_t threads = 0; // thread count
-	std::mutex pause_lock, stop_lock;
+	std::mutex sync_lock;
+	std::mutex stop_lock;
 	std::condition_variable_any pause_cond;
 	std::vector<sgstreamspec*> streamsin;
 protected:
+	bool is_active=true;
 	std::vector<std::shared_ptr<std::timed_mutex>> intern_threads_locks;
 	std::vector<std::thread> intern_threads;
 	std::vector<sgstreamspec*> streamsout;
 
 	static void thread_wrapper(sgactor *t, uint32_t threadid){
-		while (t->active == true)
+		while (t->active() == true)
 		{
 			t->step(threadid);
 		}
@@ -152,12 +153,12 @@ public:
 	inline const std::set<std::string> getInstreams(){return this->owned_instreams;}
 	inline const std::set<std::string> getOutstreams(){return this->owned_outstreams;}
 	//sgactor(bool blocking=true){this->blocking};
-	bool active=true;
 	void init(const std::string &name, sgmanager *manager, const std::vector<std::string> &streamnamesin, const std::vector<std::string> &streamnamesout);
 	virtual void enter(const std::vector<sgstreamspec*> &in,const std::vector<std::string> &out)=0;
 	virtual void run(const std::vector<std::shared_ptr<sgstream>> in)=0;
 	virtual void leave(){}
 	void step(uint32_t threadid=0);
+	bool active(){return this->is_active;}
 };
 
 }
