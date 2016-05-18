@@ -158,10 +158,6 @@ void sgmanager::cleanupActors()
 
 void sgstreamspec::updateStream(sgstream* streamob)
 {
-	if (this->is_stopping)
-	{
-		return;
-	}
 	this->protaccess.lock();
 	// check if is stopping after lock acquired
 	if (this->is_stopping)
@@ -191,10 +187,6 @@ void sgstreamspec::stop()
 std::shared_ptr<sgstream> sgstreamspec::getStream(const int64_t &blockingtime, const sgtimeunit &mintimediff)
 {
 	std::shared_ptr<sgstream> ret;
-	if (this->is_stopping)
-	{
-		throw StopStreamspec();
-	}
 	this->protaccess.lock();
 	// check if is stopping after lock acquired
 	if (this->is_stopping)
@@ -240,7 +232,7 @@ sgactor::sgactor(const double &freq, const int64_t &blockingtime, const int32_t 
 	this->blockingtime = blockingtime;
 	this->parallelize = parallelize;
 	this->global_time_previous=std::chrono::steady_clock::now()-this->time_sleep*this->threads;
-	this->time_lock.lock();
+	
 	if (freq > 0)
 	{
 		this->time_sleep = sgtimeunit((int64_t)((double)sgtimeunit_second/freq));
@@ -275,20 +267,29 @@ void sgactor::stop()
 	this->active = false;
 	this->is_pausing = false;
 	this->pause_cond.notify_all();
-	this->time_lock.unlock();
-	// first stop threads
+	this->pause_lock.lock();
+	// unlock
+	for (size_t count=0; count < this->intern_threads_locks.size(); count++)
+	{
+		this->intern_threads_locks[count]->unlock();
+	}
+	
+	// stop threads
 	while (this->intern_threads.size() > 0)
 	{
 		try
 		{
 			this->intern_threads.back().join();
+
 		} catch (...)
 		{
 			//do nothing
 		}
-
 		this->intern_threads.pop_back();
+		//delete this->intern_threads_locks.back();
+		this->intern_threads_locks.pop_back();
 	}
+	this->pause_lock.unlock();
 	// then execute a last action
 	this->leave();
 	// now cleanup streamsout
@@ -347,11 +348,14 @@ const std::vector<std::shared_ptr<sgstream>> sgactor::getStreams(bool do_block, 
 void sgactor::start_new_thread()
 {
 	this->threads += 1;
+	this->intern_threads_locks.push_back(std::make_shared<std::timed_mutex>());
+	this->intern_threads_locks.back()->lock();
 	this->intern_threads.push_back(std::thread(sgraph::sgactor::thread_wrapper, this, this->threads-1));
 }
 
 void sgactor::init_threads()
 {
+	this->pause_lock.lock();
 	this->threads = 0;
 	this->start_new_thread();
 	int32_t parallelize_temp = this->parallelize;
@@ -363,15 +367,11 @@ void sgactor::init_threads()
 	{
 		this->start_new_thread();
 	}
+	this->pause_lock.unlock();
 }
 
 void sgactor::step(uint32_t threadid){
 	uint32_t threads_temp;
-	// check if is active
-	if (!this->active)
-	{
-		return;
-	}
 	this->pause_lock.lock();
 	if (this->is_pausing)
 	{
@@ -379,7 +379,7 @@ void sgactor::step(uint32_t threadid){
 	}
 	threads_temp = this->threads;
 	this->pause_lock.unlock();
-	// check if is still active
+	// check if is active
 	if (!this->active)
 	{
 		return;
@@ -390,10 +390,10 @@ void sgactor::step(uint32_t threadid){
 	// (sleep time)-(past time since last time_previous)
 	//auto tosleep = this->time_sleep*threads_temp-(tstart-time_previous-threadid*this->time_sleep);
 	auto tempcalc = this->time_sleep*(threads_temp+threadid);
-	auto tosleep = tempcalc-(tstart-this->global_time_previous);
+	auto tosleep = this->global_time_previous+tempcalc-tstart;
 	if (tosleep > sgtimeunit(0))
 	{
-		if (this->time_lock.try_lock_for(std::chrono::duration_cast<sgtimeunit> (tosleep)))
+		if (this->intern_threads_locks[threadid]->try_lock_for(std::chrono::duration_cast<sgtimeunit> (tosleep)))
 		{
 			return;
 		}

@@ -8,9 +8,8 @@
 #include <mutex>
 #include <vector>
 #include <memory>
-//#include <thread>
+#include <thread>
 #include <future>
-//#include <initializer_list>
 #include <cstdint>
 #include <chrono>
 #include <string>
@@ -111,7 +110,6 @@ public:
 class sgactor{
 private:
 	sgmanager* manager; // don't delete
-	std::timed_mutex time_lock;
 	sgtime_point global_time_previous;
 	bool is_pausing = true; // start paused
 	int32_t parallelize = 1; // 0 adapt, >0 fix amount, <0 set start amount and limit to the double of start amount
@@ -120,6 +118,7 @@ private:
 	std::condition_variable_any pause_cond;
 	std::vector<sgstreamspec*> streamsin;
 protected:
+	std::vector<std::shared_ptr<std::timed_mutex>> intern_threads_locks;
 	std::vector<std::thread> intern_threads;
 	std::vector<sgstreamspec*> streamsout;
 
