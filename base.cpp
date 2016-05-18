@@ -181,7 +181,7 @@ void sgstreamspec::stop()
 
 std::shared_ptr<sgstream> sgstreamspec::getStream(const int64_t &blockingtime, const sgtimeunit &mintimediff)
 {
-	std::shared_ptr<sgstream> ret;
+	std::shared_ptr<sgstream> ret=std::shared_ptr<sgstream>(0);
 	this->protaccess.lock();
 	// check if is stopping after lock acquired
 	if (!this->active())
@@ -201,7 +201,7 @@ std::shared_ptr<sgstream> sgstreamspec::getStream(const int64_t &blockingtime, c
 			if (this->updating_finished.wait_for(this->protaccess, sgtimeunit(blockingtime)) == std::cv_status::timeout)
 			{
 				this->protaccess.unlock();
-				return std::shared_ptr<sgstream>(0);
+				return ret;
 			}
 		}
 	}
@@ -260,7 +260,9 @@ void sgactor::stop()
 	this->is_active = false;
 	this->is_pausing = false;
 	this->pause_cond.notify_all();
+	// sync
 	this->sync_lock.lock();
+	this->sync_lock.unlock();
 	// unlock
 	for (size_t count=0; count < this->intern_threads_locks.size(); count++)
 	{
@@ -282,7 +284,6 @@ void sgactor::stop()
 		//delete this->intern_threads_locks.back();
 		this->intern_threads_locks.pop_back();
 	}
-	this->sync_lock.unlock();
 	// then execute a last action
 	this->leave();
 	// now cleanup streamsout
@@ -358,6 +359,8 @@ void sgactor::init_threads()
 	}
 	for (int32_t count=1;count<parallelize_temp; count++)
 	{
+		if (!this->active())
+			break;
 		this->start_new_thread();
 	}
 	this->sync_lock.unlock();
@@ -390,10 +393,18 @@ void sgactor::step(uint32_t threadid){
 		{
 			return;
 		}
+	}else if (this->time_sleep <= sgtimeunit(0))
+	{
+		std::this_thread::yield();
 	}
-	else if (this->parallelize <= 0 && this->time_sleep > sgtimeunit(0))
+	else if (this->parallelize <= 0)
 	{
 		this->sync_lock.lock();
+		// check if is active
+		if (!this->active())
+		{
+			return;
+		}
 		// calculate, check that integer does not overflow
 		if (this->threads*-2>-2147483648 && (this->parallelize == 0 || this->parallelize>-this->threads*2))
 		{
