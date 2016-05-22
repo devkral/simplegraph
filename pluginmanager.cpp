@@ -6,10 +6,10 @@
 
 namespace sgraph{
 
-pluginmanager::pluginmanager()
+pluginmanager::pluginmanager(const std::string &callpath)
 {
 	this->manager = new sgmanager;
-
+	this->callpath = callpath;
 }
 pluginmanager::~pluginmanager()
 {
@@ -17,6 +17,52 @@ pluginmanager::~pluginmanager()
 	delete this->manager;
 	this->manager = 0;
 	std::cout << "simplegraph cleaned up" << std::endl;
+}
+
+const std::vector<std::string> pluginmanager::parse_path(const std::vector<std::string> &inp, const std::string &configpath)
+{
+	std::vector<std::string> out;
+	for (std::string elem: inp)
+	{
+		std::string newelem;
+		if (elem.compare(0, 7, "$config")==0)
+		{
+			newelem=configpath.substr(0, configpath.find_last_of("/\\"))+elem.substr(7);
+		}
+		else if (elem.compare(0, 5, "$call")==0)
+		{
+			newelem=this->callpath.substr(0, this->callpath.find_last_of("/\\"))+elem.substr(5);
+		}
+		else
+			newelem=elem;
+#if _WIN32|_WIN64
+		size_t pos = newelem.find("/", 0);
+		while (pos!=std::string::npos)
+		{
+			newelem = newelem.substr(0, pos)+"\\"+newelem.substr(pos+1, std::string::npos);
+			pos = newelem.find("/", pos);
+		}
+#endif
+		std::ifstream stream = std::ifstream();
+		stream.open(newelem);
+		if (stream.is_open())
+		{
+			stream.close();
+			out.push_back(newelem);
+		}
+	}
+	if (inp.size()==0)
+	{
+		std::cerr << "Error: no path specified in config" << std::endl;
+	}else if (out.size()==0)
+	{
+		std::cerr << "Error: no valid path. Defined pathes:" << std::endl;
+		for (std::string elem: inp)
+		{
+			std::cerr << "    " << elem << std::endl;
+		}
+	}
+	return out;
 }
 
 
@@ -74,6 +120,9 @@ void pluginmanager::parsefile(const std::string &filepath)
 		{
 			tmargs["name"] = std::get<1>(parsed_line);
 			foundline=2;
+		}else if (std::get<0>(parsed_line) == "path")
+		{
+			tmargs["path"] = parse_path(std::get<1>(parsed_line), filepath);
 		}else
 		{
 			tmargs[std::get<0>(parsed_line)] = std::get<1>(parsed_line);
@@ -96,6 +145,10 @@ void pluginmanager::parsefile(const std::string &filepath)
 }
 bool pluginmanager::addPlugin(const std::map<std::string, std::vector<std::string>> tmargs)
 {
+	if (tmargs.at("path").size()==0)
+	{
+		return false;
+	}
 	sgactor *actor = loadActor(tmargs.at("path")[0], tmargs);
 	if (actor == 0)
 	{
@@ -121,7 +174,7 @@ void pluginmanager::pause()
 
 int main(int argc, char *argv[])
 {
-	sgraph::pluginmanager pluman;
+	sgraph::pluginmanager pluman(argv[0]);
 	for (uint64_t count=1; count<argc; count++)
 	{
 		try{

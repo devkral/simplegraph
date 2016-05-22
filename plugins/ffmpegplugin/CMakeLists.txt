@@ -19,3 +19,7 @@ target_link_libraries (ffmpegmain ffmpegplugin sgbase)
 
 add_executable(ffmpeglistdevices ffmpeglistdevices.cpp)
 target_link_libraries (ffmpeglistdevices ffmpegplugin sgbase)
+
+
+install(TARGETS ffmpegplugin ffmpegmain ffmpeglistdevices DESTINATION ${CMAKE_INSTALL_PREFIX}/plugins/ffmpegplugin)
+install(FILES ffmpeg.config DESTINATION ${CMAKE_INSTALL_PREFIX}/plugins/ffmpegplugin)

@@ -25,3 +25,5 @@ file (GLOB subplugins "plugins/*")
 foreach(thisplugin ${subplugins})
 	add_subdirectory(${thisplugin})
 endforeach()
+
+install(TARGETS sgbase pluginmanager DESTINATION ${CMAKE_INSTALL_PREFIX})

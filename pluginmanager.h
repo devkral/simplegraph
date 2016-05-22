@@ -30,6 +30,7 @@ const char _filesysdelimiter = '/';
 #endif
 */
 
+
 const size_t find_token(const std::string &inp, char token)
 {
 	bool isopen=false;
@@ -247,15 +248,15 @@ sgactor *loadActor(const std::string &path, const std::map<std::string, std::vec
 class pluginmanager{
 private:
 	sgmanager *manager=0;
-
+	std::string callpath;
 public:
 	~pluginmanager();
-	pluginmanager();
+	pluginmanager(const std::string &callpath="");
 	void parsefile(const std::string &filepath);
 	bool addPlugin(const std::map<std::string, std::vector<std::string>> args);
 	void start();
 	void pause();
-
+	const std::vector<std::string> parse_path(const std::vector<std::string> &inp, const std::string &configpath);
 };
 
 
