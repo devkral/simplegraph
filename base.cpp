@@ -407,22 +407,6 @@ void sgactor::step(uint32_t threadid){
 	{
 		std::this_thread::yield();
 	}
-	else if (this->parallelize <= 0)
-	{
-		this->sync_lock.lock();
-		// check if is active
-		if (!this->active())
-		{
-			return;
-		}
-		// calculate, check that integer does not overflow
-		if (this->threads*-2>-2147483648 && (this->parallelize == 0 || this->parallelize>-this->threads*2))
-		{
-			this->start_new_thread();
-			threads_temp++;
-		}
-		this->sync_lock.unlock();
-	}
 	try{
 		this->run(this->getStreams(threadid, this->time_sleep));
 	}catch(StopStreamspec &e)
@@ -435,10 +419,29 @@ void sgactor::step(uint32_t threadid){
 		this->stop();
 		return;
 	}
-	if (threadid == 0)
+	if (threadid == 0 && this->time_sleep>sgtimeunit(0))
 	{
 		auto tend = std::chrono::steady_clock::now();
+		auto overtimecalc = tstart+tempcalc*(this->samples+1)-tend;
 		this->sync_lock.lock();
+		if (overtimecalc<sgtimeunit(0))
+		{
+			//std::cerr << "over time: " << this->getName() << " : " << overtimecalc.count() << std::endl;
+			if (this->parallelize <= 0)
+			{
+				// check if is active
+				if (!this->active())
+				{
+					return;
+				}
+				// calculate, check that integer does not overflow
+				if (this->threads*-2>-2147483648 && (this->parallelize == 0 || this->parallelize>-this->threads*2))
+				{
+					this->start_new_thread();
+					threads_temp++;
+				}
+			}
+		}
 		this->global_time_previous = tend;
 		this->sync_lock.unlock();
 	}
