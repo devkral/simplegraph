@@ -25,6 +25,8 @@ extern const std::vector<std::string> default_value_map(const std::map<std::stri
 typedef std::chrono::steady_clock::time_point sgtime_point;
 typedef std::chrono::nanoseconds sgtimeunit;
 const int64_t sgtimeunit_second=1000000000L;
+// failsafe if run blocks until new threads are spawned, protects against integer overflow
+const int64_t sgactor_max_autothreads=512;
 
 class sgstream;
 class sgstreamspec;

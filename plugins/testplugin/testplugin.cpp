@@ -28,7 +28,7 @@ void testprovider::leave()
 void testtransformer::enter(const std::vector<sgraph::sgstreamspec*> &in, const std::vector<std::string> &out)
 {
 	std::cout << "transformer consumes:" << *this->getInstreams().begin() << std::endl;
-	if (in.size()!=1 || (out.size()!=2 && out.size()!=1 ))
+	if (in.size()!=1 || out.size()>3 || out.size()==0)
 	{
 		std::cerr << "transformer " << in.size() << " " << out.size() << std::endl;
 		throw(sgraph::sgraphStreamException("invalid amount of in- or outstreams"));
@@ -36,12 +36,17 @@ void testtransformer::enter(const std::vector<sgraph::sgstreamspec*> &in, const 
 	std::cout << "transformer inits:" << out[0] << std::endl;
 	this->getManager()->updateStreamspec(out[0], new teststreamspec());
 
-	
-	if (out.size()==2)
+
+	if (out.size()>=2)
 	{
 		this->getManager()->updateStreamspec(out[1], new sgraph::spec_log());
 		std::cout << "debug inits:" << out[1] << std::endl;
-		
+	}
+	
+	if (out.size()>=3)
+	{
+		this->getManager()->updateStreamspec(out[2], new sgraph::spec_log());
+		std::cout << "debug2 inits:" << out[2] << std::endl;
 	}
 	std::cout << "Name: " << this->getName() << std::endl;
 }
@@ -52,8 +57,10 @@ void testtransformer::run(const sgraph::sginstreams in)
 	if (temp!=0)
 	{
 		streamsout[0]->updateStream(new teststream(temp->testout));
-		if (streamsout.size()==2)
-			streamsout[1]->updateStream(new sgraph::stream_log("test",1));
+		if (streamsout.size()>=2)
+			streamsout[1]->updateStream(new sgraph::stream_log("test message",0));
+		if (streamsout.size()>=3)
+			streamsout[2]->updateStream(new sgraph::stream_log("test error",1));
 	}
 
 }

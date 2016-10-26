@@ -394,7 +394,7 @@ void sgactor::step(uint32_t threadid){
 	// subtract difference from slot from sleep time
 	// if slot is missed, parallelize if not fixed
 	// (sleep time)-(past time since last time_previous)
-	//auto tosleep = this->time_sleep*threads_temp-(tstart-time_previous-threadid*this->time_sleep);
+	// auto tosleep = this->time_sleep*threads_temp-(tstart-time_previous-threadid*this->time_sleep);
 	auto tempcalc = this->time_sleep*(threads_temp+threadid);
 	auto tosleep = this->global_time_previous+tempcalc-tstart;
 	if (tosleep > sgtimeunit(0))
@@ -419,29 +419,34 @@ void sgactor::step(uint32_t threadid){
 		this->stop();
 		return;
 	}
-	if (threadid == 0 && this->time_sleep>sgtimeunit(0))
+	auto tend = std::chrono::steady_clock::now();
+	// should be positive
+	auto overtimecalc = tend-(tstart+this->time_sleep*threads_temp*this->samples);
+	if (overtimecalc>sgtimeunit(0))
 	{
-		auto tend = std::chrono::steady_clock::now();
-		auto overtimecalc = tstart+tempcalc*(this->samples+1)-tend;
-		this->sync_lock.lock();
-		if (overtimecalc<sgtimeunit(0))
+		//std::cerr << "over time: " << this->getName() << " : " << overtimecalc.count() << std::endl;
+		if (this->parallelize <= 0)
 		{
-			//std::cerr << "over time: " << this->getName() << " : " << overtimecalc.count() << std::endl;
-			if (this->parallelize <= 0)
+			this->sync_lock.lock();
+			// check if is active
+			if (!this->active())
 			{
-				// check if is active
-				if (!this->active())
-				{
-					return;
-				}
-				// calculate, check that integer does not overflow
-				if (this->threads*-2>-2147483648 && (this->parallelize == 0 || this->parallelize>-this->threads*2))
-				{
-					this->start_new_thread();
-					threads_temp++;
-				}
+				this->sync_lock.unlock();
+				return;
 			}
+			// calculate, failsafe
+			// check that number of threads is less or equal to parallelize
+			if (this->threads>sgactor_max_autothreads && (this->parallelize==0 || -this->parallelize<=this->threads))
+			{
+				this->start_new_thread();
+			}
+			this->sync_lock.unlock();
 		}
+	}
+		
+	if (threadid==0 && this->time_sleep>sgtimeunit(0))
+	{
+		this->sync_lock.lock();
 		this->global_time_previous = tend;
 		this->sync_lock.unlock();
 	}
