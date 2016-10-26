@@ -75,11 +75,15 @@ void testconsumer::enter(const std::vector<sgraph::sgstreamspec*> &in, const std
 
 void testconsumer::run(const sgraph::sginstreams in)
 {
-    teststream* temp = (teststream*)in[0][0].get();
-	if (temp!=0)
-		std::cout << temp->testout << std::endl;
-	else
-		std::cout << "NULL" << std::endl;
+	teststream* temp = 0;
+	for (uint32_t count_sample=0; count_sample<in[0].size(); count_sample++)
+	{
+		temp = (teststream*)in[0][count_sample].get();
+		if (temp!=0)
+			std::cout << "sample: " << count_sample << ": " << temp->testout << std::endl;
+		else
+			std::cout << "sample: " << count_sample << ": " << "NULL" << std::endl;
+	}
 }
 void testconsumer::leave()
 {
