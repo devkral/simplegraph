@@ -335,7 +335,7 @@ const sginstreams sgactor::getStreams(const uint32_t &threadid, const sgtimeunit
 			}
 			
 			// if last don't block
-			if (count_sample < this->streamsin.size()-1)
+			if (count_sample < this->samples-1)
 			{
 				// wait
 				if (this->intern_threads_locks[threadid]->try_lock_for(std::chrono::duration_cast<sgtimeunit> (this->time_sleep)))
