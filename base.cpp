@@ -395,7 +395,7 @@ void sgactor::step(uint32_t threadid){
 	// if slot is missed, parallelize if not fixed
 	// (sleep time)-(past time since last time_previous)
 	//auto tosleep = this->time_sleep*threads_temp-(tstart-time_previous-threadid*this->time_sleep);
-	auto tempcalc = this->time_sleep*this->samples*(threads_temp+threadid);
+	auto tempcalc = this->time_sleep*(threads_temp+threadid);
 	auto tosleep = this->global_time_previous+tempcalc-tstart;
 	if (tosleep > sgtimeunit(0))
 	{
