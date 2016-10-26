@@ -9,7 +9,7 @@ namespace sgraph{
 
 
 
-debugactor::debugactor(uint8_t loglevel) : sgactor(0,-1, 1) {
+debugactor::debugactor(uint8_t loglevel) : sgactor(0,-1, 1, 1) {
 	this->loglevel=loglevel;
 }
 void debugactor::enter(const std::vector<sgstreamspec*> &in,const std::vector<std::string> &out)
@@ -26,12 +26,12 @@ void debugactor::enter(const std::vector<sgstreamspec*> &in,const std::vector<st
 		}
 	}*/ // getStreams should protect already
 }
-void debugactor::run(const std::vector<std::shared_ptr<sgstream>> in)
+void debugactor::run(const sginstreams in)
 {
 	unsigned int count=0;
-	for (std::shared_ptr<sgstream> elem: in)
+	for (sginstream elem: in)
 	{
-		stream_log* logob=static_cast<stream_log*>(elem.get());
+		stream_log* logob=static_cast<stream_log*>(elem[0].get());
 		if (logob->loglevel==0){
 			std::cout << "Message: Stream " << count << ": " << logob->text << std::endl;
 		}

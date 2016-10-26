@@ -220,10 +220,12 @@ std::shared_ptr<sgstream> sgstreamspec::getStream(const int64_t &blockingtime, c
 }
 /////////////////////////////////////////////////////////////////////////////////
 
-sgactor::sgactor(const double &freq, const int64_t &blockingtime, const int32_t &parallelize)
+sgactor::sgactor(const double &freq, const int64_t &blockingtime, const int32_t &parallelize, const uint32_t &samples)
 {
 	this->blockingtime = blockingtime;
 	this->parallelize = parallelize;
+	// minimum is 1 sample
+	this->samples = samples==0 ? 1 : samples;
 	this->global_time_previous=std::chrono::steady_clock::now()-this->time_sleep*this->threads;
 	
 	if (freq > 0)
@@ -306,34 +308,42 @@ std::shared_ptr<sgstream> getStreamhelper(sgstreamspec *t, const int64_t &blocki
 	return t->getStream(blockingtime, mintimediff);
 }
 
-const std::vector<std::shared_ptr<sgstream>> sgactor::getStreams(bool do_block, const sgtimeunit &mintimediff)
+const sginstreams sgactor::getStreams(const uint32_t &threadid, const sgtimeunit &mintimediff)
 {
-	std::vector<std::shared_ptr<sgstream>> _tretgetStreams(this->streamsin.size());
+	sginstreams _tretgetStreams(this->streamsin.size(), sginstream(this->samples));
 	std::vector<std::future<std::shared_ptr<sgstream>>> _thandlesgetStreams(this->streamsin.size());
 	// shortcut when no input stream is available
 	if (this->streamsin.size()>0)
 	{
-		for (size_t count=0; count<this->streamsin.size(); count++)
+		for (size_t count_sample=0; count_sample<this->samples; count_sample++)
 		{
-			if (this->streamsin[count]==0)
+			for (size_t count_stream=0; count_stream<this->streamsin.size(); count_stream++)
 			{
-				throw(sgraphStreamException("stream in: \""+this->getName()+"\" is uninitialized"));
-				// stops when using deleted stream
-				//throw StopStreamspec(); // stops when using deleted stream
+				if (this->streamsin[count_stream]==0)
+				{
+					throw(sgraphStreamException("stream in: \""+this->getName()+"\" is uninitialized"));
+					// stops when using deleted stream
+					//throw StopStreamspec(); // stops when using deleted stream
+				}
+				_thandlesgetStreams[count_stream]=std::async(std::launch::async, getStreamhelper, this->streamsin[count_stream], this->blockingtime, mintimediff);
 			}
-			if (do_block==true)
-			{
-				_thandlesgetStreams[count]=std::async(std::launch::async, getStreamhelper, this->streamsin[count], -1, mintimediff);
-			}else
-			{
-				_thandlesgetStreams[count]=std::async(std::launch::async, getStreamhelper, this->streamsin[count], this->blockingtime, mintimediff);
-			}
-		}
 
-		for (size_t count=0; count<_thandlesgetStreams.size(); count++)
-		{
-			_thandlesgetStreams[count].wait();
-			_tretgetStreams[count]=_thandlesgetStreams[count].get();
+			for (size_t count_stream=0; count_stream<_thandlesgetStreams.size(); count_stream++)
+			{
+				_thandlesgetStreams[count_stream].wait();
+				_tretgetStreams[count_stream][count_sample]=_thandlesgetStreams[count_stream].get();
+			}
+			
+			// if last don't block
+			if (count_sample < this->streamsin.size()-1)
+			{
+				// wait
+				if (this->intern_threads_locks[threadid]->try_lock_for(std::chrono::duration_cast<sgtimeunit> (this->time_sleep)))
+				{
+					// stop run (only call of getStreams)
+					throw(StopStreamspec());
+				}
+			}
 		}
 	}
 	return _tretgetStreams;
@@ -385,7 +395,7 @@ void sgactor::step(uint32_t threadid){
 	// if slot is missed, parallelize if not fixed
 	// (sleep time)-(past time since last time_previous)
 	//auto tosleep = this->time_sleep*threads_temp-(tstart-time_previous-threadid*this->time_sleep);
-	auto tempcalc = this->time_sleep*(threads_temp+threadid);
+	auto tempcalc = this->time_sleep*this->samples*(threads_temp+threadid);
 	auto tosleep = this->global_time_previous+tempcalc-tstart;
 	if (tosleep > sgtimeunit(0))
 	{
@@ -414,7 +424,7 @@ void sgactor::step(uint32_t threadid){
 		this->sync_lock.unlock();
 	}
 	try{
-		this->run(this->getStreams(false, this->time_sleep));
+		this->run(this->getStreams(threadid, this->time_sleep));
 	}catch(StopStreamspec &e)
 	{
 		this->stop();

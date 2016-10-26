@@ -20,10 +20,10 @@ int main(int argc, char *argv[])
 	ac1streamsout.push_back("stream1");
 	std::vector<std::string> ac2streamsout;
 	try{
-		man.addActor("reader",new ffmpegread(-1,1,1,argv[1]), ac1streamsin, ac1streamsout);
+		man.addActor("reader",new ffmpegread(-1,1,1,1,argv[1]), ac1streamsin, ac1streamsout);
 		if (argc>=3)
 		{
-			man.addActor("writer",new ffmpegwrite(-1,0,1,argv[2]), ac1streamsout, ac2streamsout);
+			man.addActor("writer",new ffmpegwrite(-1,0,1,1,argv[2]), ac1streamsout, ac2streamsout);
 
 
 		}

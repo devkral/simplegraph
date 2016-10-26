@@ -26,20 +26,20 @@ public:
 };
 class testprovider : public sgraph::sgactor{
 public:
-	testprovider(const double freq, const int64_t blocking, const int32_t parallelize): sgactor(freq, blocking, parallelize) {}
+	testprovider(const double freq, const int64_t blocking, const int32_t parallelize, const uint32_t samples): sgactor(freq, blocking, parallelize, 1) {}
 	//~testprovider();
 	void enter(const std::vector<sgraph::sgstreamspec*> &in, const std::vector<std::string> &out);
-	void run(const std::vector<std::shared_ptr<sgraph::sgstream>> in);
+	void run(const sgraph::sginstreams in);
 	void leave();
 
 };
 
 class testtransformer : public sgraph::sgactor{
 public:
-	testtransformer(const double freq, const int64_t blocking, const int32_t parallelize): sgactor(freq, blocking, parallelize) {}
+	testtransformer(const double freq, const int64_t blocking, const int32_t parallelize, const uint32_t samples): sgactor(freq, blocking, parallelize, samples) {}
 	//~testtransformer();
 	void enter(const std::vector<sgraph::sgstreamspec*> &in, const std::vector<std::string> &out);
-	void run(const std::vector<std::shared_ptr<sgraph::sgstream>> in);
+	void run(const sgraph::sginstreams in);
 	void leave();
 
 };
@@ -47,10 +47,10 @@ public:
 
 class testconsumer : public sgraph::sgactor{
 public:
-	testconsumer(const double freq, const int64_t blocking, const int32_t parallelize): sgactor(freq, blocking, parallelize) {}
+	testconsumer(const double freq, const int64_t blocking, const int32_t parallelize, const uint32_t samples): sgactor(freq, blocking, parallelize, samples) {}
 	//~testconsumer();
 	void enter(const std::vector<sgraph::sgstreamspec*> &in,const std::vector<std::string> &out);
-	void run(const std::vector<std::shared_ptr<sgraph::sgstream>> in);
+	void run(const sgraph::sginstreams in);
 	void leave();
 
 };

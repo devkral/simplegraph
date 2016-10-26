@@ -20,7 +20,7 @@ namespace sgraph{
 
 
 
-ffmpegwrite::ffmpegwrite(double freq, int64_t blocking, int32_t parallelize, std::string outsink, std::string outformat): sgactor(freq, blocking, parallelize)
+ffmpegwrite::ffmpegwrite(double freq, int64_t blocking, int32_t parallelize, uint32_t samples, std::string outsink, std::string outformat): sgactor(freq, blocking, parallelize, samples)
 {
 	this->outsink=outsink;
 	this->outformat=outformat;
@@ -48,9 +48,9 @@ void ffmpegwrite::enter(const std::vector<sgstreamspec*> &in,const std::vector<s
 		throw(sgraph::sgraphStreamException("Error occurred when opening output file"));
 	}
 }
-void ffmpegwrite::run(const std::vector<std::shared_ptr<sgstream>> in)
+void ffmpegwrite::run(const sginstreams in)
 {
-	stream_ffmpeg_packet *temp = (stream_ffmpeg_packet*)in[0].get();
+	stream_ffmpeg_packet *temp = (stream_ffmpeg_packet*)in[0][0].get();
 	av_interleaved_write_frame(this->form_context, &temp->packet);
 
 }

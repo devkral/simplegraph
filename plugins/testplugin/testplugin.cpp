@@ -14,7 +14,7 @@ void testprovider::enter(const std::vector<sgraph::sgstreamspec*> &in, const std
 	std::cout << "Name: " << this->getName() << std::endl;
 }
 
-void testprovider::run(std::vector<std::shared_ptr<sgraph::sgstream>> in)
+void testprovider::run(const sgraph::sginstreams in)
 {
 	streamsout[0]->updateStream(new teststream(std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count()));
 
@@ -46,9 +46,9 @@ void testtransformer::enter(const std::vector<sgraph::sgstreamspec*> &in, const 
 	std::cout << "Name: " << this->getName() << std::endl;
 }
 
-void testtransformer::run(std::vector<std::shared_ptr<sgraph::sgstream>> in)
+void testtransformer::run(const sgraph::sginstreams in)
 {
-	teststream* temp = (teststream*)in[0].get();
+	teststream* temp = (teststream*)in[0][0].get();
 	if (temp!=0)
 	{
 		streamsout[0]->updateStream(new teststream(temp->testout));
@@ -73,10 +73,11 @@ void testconsumer::enter(const std::vector<sgraph::sgstreamspec*> &in, const std
 	std::cout << "Name: " << this->getName() << std::endl;
 }
 
-void testconsumer::run(std::vector<std::shared_ptr<sgraph::sgstream>> in)
+void testconsumer::run(const sgraph::sginstreams in)
 {
-	if (in[0]!=0)
-		std::cout << ((teststream*)in[0].get())->testout << std::endl;
+    teststream* temp = (teststream*)in[0][0].get();
+	if (temp!=0)
+		std::cout << temp->testout << std::endl;
 	else
 		std::cout << "NULL" << std::endl;
 }
@@ -93,16 +94,17 @@ sgraph::sgactor *create_pluginactor(const std::map<std::string,std::vector<std::
 	double freq = stod(sgraph::default_value_map(args, "freq", "1")[0]);
 	int64_t blocking = stoi(sgraph::default_value_map(args, "blocking", "-1")[0]);
 	int32_t parallelize = stoi(sgraph::default_value_map(args, "parallelize", "1")[0]);
+	uint32_t samples = stoi(sgraph::default_value_map(args, "samples", "1")[0]);
 	
 	if (type=="provider")
 	{
-		return static_cast<sgraph::sgactor*>(new testprovider(freq, blocking, parallelize));
+		return static_cast<sgraph::sgactor*>(new testprovider(freq, blocking, parallelize, samples));
 	}else if (type=="transformer")
 	{
-		return static_cast<sgraph::sgactor*>(new testtransformer(freq, blocking, parallelize));
+		return static_cast<sgraph::sgactor*>(new testtransformer(freq, blocking, parallelize, samples));
 	}else if (type=="consumer")
 	{
-		return static_cast<sgraph::sgactor*>(new testconsumer(freq, blocking, parallelize));
+		return static_cast<sgraph::sgactor*>(new testconsumer(freq, blocking, parallelize, samples));
 	}
 	else return 0;
 }

@@ -19,10 +19,10 @@ protected:
 	int video_stream_index=-1;
 	int audio_stream_index=-1;
 public:
-	ffmpegwrite(double freq, int64_t blocking, int32_t parallelize, std::string outsink, std::string outformat="");
+	ffmpegwrite(double freq, int64_t blocking, int32_t parallelize, uint32_t samples, std::string outsink, std::string outformat="");
 	~ffmpegwrite();
 	void enter(const std::vector<sgstreamspec*> &in,const std::vector<std::string> &out);
-	void run(const std::vector<std::shared_ptr<sgstream>> in);
+	void run(const sginstreams in);
 	void leave();
 
 

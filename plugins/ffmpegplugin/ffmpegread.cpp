@@ -18,7 +18,7 @@ namespace sgraph{
 
 
 
-ffmpegread::ffmpegread(double freq, int64_t blocking, int32_t parallelize, std::string sourcepath, std::string sourceprovider, std::string type): sgactor(freq, blocking, parallelize)
+ffmpegread::ffmpegread(double freq, int64_t blocking, int32_t parallelize, uint32_t samples, std::string sourcepath, std::string sourceprovider, std::string type): sgactor(freq, blocking, parallelize, samples)
 {
 	this->sourcepath=sourcepath;
 	this->sourceprovider=sourceprovider;
@@ -73,7 +73,7 @@ void ffmpegread::enter(const std::vector<sgstreamspec*> &in,const std::vector<st
 		this->getManager()->updateStreamspec(out[0], new spec_ffmpeg_packet(false, 0, audiocontext));
 	}
 }
-void ffmpegread::run(const std::vector<std::shared_ptr<sgstream>> )
+void ffmpegread::run(const sginstreams)
 {
 	av_init_packet(&this->packet);
 	this->gotvideo=false;

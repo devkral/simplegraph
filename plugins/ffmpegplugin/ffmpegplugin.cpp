@@ -12,6 +12,7 @@ sgraph::sgactor *create_pluginactor(const std::map<std::string,std::vector<std::
 	double freq = stod(sgraph::default_value_map(args, "freq", "1")[0]);
 	int64_t blocking = stoi(sgraph::default_value_map(args, "blocking", "-1")[0]);
 	int32_t parallelize = stoi(sgraph::default_value_map(args, "parallelize", "1")[0]);
+	uint32_t samples = stoi(sgraph::default_value_map(args, "samples", "1")[0]);
 	if (type=="read")
 	{
 /**		if (args.size()==1)

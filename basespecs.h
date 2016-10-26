@@ -75,7 +75,7 @@ public:
 
 };
 
-class stream_log :  public stream_text{
+class stream_log : public stream_text{
 public:
 	int8_t loglevel;
 	stream_log(const std::string &text, int8_t loglevel) : stream_text(text)
@@ -100,7 +100,7 @@ public:
 	
 	debugactor(uint8_t loglevel);
 	void enter(const std::vector<sgstreamspec*> &in,const std::vector<std::string> &out);
-	void run(const std::vector<std::shared_ptr<sgstream>> in);
+	void run(const sginstreams in);
 	void leave(){}
 };
 
